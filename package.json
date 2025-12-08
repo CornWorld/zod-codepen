@@ -1,0 +1,28 @@
+{
+  "name": "zod-codepen",
+  "version": "1.0.0",
+  "description": "Serialize Zod schemas to pure Zod code",
+  "license": "MPL-2.0",
+  "private": "true",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:v3": "pnpm --filter @zod-codepen/zod-v3 test",
+    "test:v4": "pnpm --filter @zod-codepen/zod-v4 test",
+    "lint": "eslint .",
+    "clean": "pnpm -r clean",
+    "docs:dev": "pnpm --filter @zod-codepen/docs dev",
+    "docs:build": "pnpm --filter @zod-codepen/docs build",
+    "docs:preview": "pnpm --filter @zod-codepen/docs preview"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@zod-codepen/core",
+  "version": "0.0.1",
+  "description": "Core serialization logic for zod-to-code",
+  "license": "MPL-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "zod": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  }
+}

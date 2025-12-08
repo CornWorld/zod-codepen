@@ -1,0 +1,6 @@
+packages:
+  - pkgs/*
+  - docs
+
+onlyBuiltDependencies:
+  - esbuild

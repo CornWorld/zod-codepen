@@ -1,0 +1,32 @@
+{
+  "name": "@zod-codepen/zod-v3",
+  "version": "0.0.1",
+  "description": "Zod v3 adapter for zod-to-code",
+  "license": "MPL-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@zod-codepen/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "zod": "^3.0.0"
+  }
+}
