@@ -3,6 +3,15 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "zod-codepen",
   description: "Serialize Zod schemas to pure Zod code strings at runtime",
+  base: '/',
+
+  markdown: {
+    lineNumbers: false,  // 可以根据需要开启行号
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark'
+    }
+  },
 
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
@@ -10,6 +19,7 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'zod-codepen' }],
     ['meta', { property: 'og:description', content: 'Serialize Zod schemas to pure Zod code strings' }],
+    ['meta', { property: 'og:url', content: 'https://zod-codepen.corn.im' }],
   ],
 
   themeConfig: {
@@ -60,6 +70,7 @@ export default defineConfig({
           items: [
             { text: '自定义处理器', link: '/guide/custom-handlers' },
             { text: '支持的类型', link: '/guide/supported-types' },
+            { text: '在线 Playground', link: '/playground' },
           ]
         }
       ],
@@ -90,7 +101,7 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the MPL 2.0 License.',
-      copyright: 'Copyright © 2024-present CornWorld'
+      copyright: 'Copyright © 2025-present <a href="https://github.com/CornWorld">CornWorld</a>'
     },
 
     search: {

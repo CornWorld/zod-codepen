@@ -10,6 +10,9 @@ hero:
       text: 快速开始
       link: /guide/getting-started
     - theme: alt
+      text: 在线试用
+      link: /playground
+    - theme: alt
       text: API 参考
       link: /api/serialize
     - theme: alt

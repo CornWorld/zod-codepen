@@ -167,6 +167,7 @@ console.log(generateModule({
 
 ## 下一步
 
+- [在线 Playground](/playground) - 立即在线试用 zod-codepen
 - [安装](/guide/installation) - 详细安装说明和要求
 - [基本用法](/guide/basic-usage) - 更多使用示例
 - [格式化选项](/guide/formatting) - 完整的格式化配置

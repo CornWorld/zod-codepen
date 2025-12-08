@@ -9,7 +9,9 @@
     "preview": "vitepress preview ."
   },
   "dependencies": {
-    "@zod-codepen/core": "workspace:*",
+    "@zod-codepen/zod-v3": "workspace:*",
+    "@zod-codepen/zod-v4": "workspace:*",
+    "shiki": "^1.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
