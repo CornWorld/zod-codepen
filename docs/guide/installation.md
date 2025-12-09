@@ -8,74 +8,110 @@
 
 ## 包选择
 
-zod-codepen 提供两个独立的包，分别对应 Zod 的两个主要版本：
+zod-codepen 提供多个包来满足不同需求：
 
-| 包名 | Zod 版本 | npm |
-|------|----------|-----|
-| `@zod-codepen/zod-v3` | 3.x | [![npm](https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v3) |
-| `@zod-codepen/zod-v4` | 4.x | [![npm](https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v4) |
+| 包名 | 用途 | npm |
+|------|------|-----|
+| `@zod-codepen/zod-v3` | Zod v3.x 运行时序列化 | [![npm](https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v3) |
+| `@zod-codepen/zod-v4` | Zod v4.x 运行时序列化 | [![npm](https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v4) |
+| `@zod-codepen/vite-plugin` | Vite 构建时转换插件 | [![npm](https://img.shields.io/npm/v/@zod-codepen/vite-plugin.svg)](https://www.npmjs.com/package/@zod-codepen/vite-plugin) |
+| `@zod-codepen/core` | 核心序列化引擎（内部使用） | [![npm](https://img.shields.io/npm/v/@zod-codepen/core.svg)](https://www.npmjs.com/package/@zod-codepen/core) |
 
 ## 安装
 
-### 使用 npm
+### 运行时序列化
 
-```bash
-# Zod v3 用户
+::: code-group
+
+```bash [npm]
+# Zod v3
 npm install @zod-codepen/zod-v3
 
-# Zod v4 用户
+# Zod v4
 npm install @zod-codepen/zod-v4
 ```
 
-### 使用 pnpm
-
-```bash
-# Zod v3 用户
+```bash [pnpm]
+# Zod v3
 pnpm add @zod-codepen/zod-v3
 
-# Zod v4 用户
+# Zod v4
 pnpm add @zod-codepen/zod-v4
 ```
 
-### 使用 yarn
-
-```bash
-# Zod v3 用户
+```bash [yarn]
+# Zod v3
 yarn add @zod-codepen/zod-v3
 
-# Zod v4 用户
+# Zod v4
 yarn add @zod-codepen/zod-v4
+```
+
+:::
+
+### Vite 插件（构建时转换）
+
+如果你使用 Vite，可以安装插件在构建时自动转换模式：
+
+::: code-group
+
+```bash [npm]
+npm install -D @zod-codepen/vite-plugin
+```
+
+```bash [pnpm]
+pnpm add -D @zod-codepen/vite-plugin
+```
+
+```bash [yarn]
+yarn add -D @zod-codepen/vite-plugin
+```
+
+:::
+
+配置 `vite.config.ts`：
+
+```typescript
+import { defineConfig } from 'vite';
+import zodCodepen from '@zod-codepen/vite-plugin';
+
+export default defineConfig({
+  plugins: [zodCodepen()]
+});
 ```
 
 ## Peer Dependencies
 
-每个包都需要对应版本的 Zod 作为 peer dependency：
-
-```json
-// @zod-codepen/zod-v3
-{
-  "peerDependencies": {
-    "zod": "^3.0.0"
-  }
-}
-
-// @zod-codepen/zod-v4
-{
-  "peerDependencies": {
-    "zod": "^4.0.0"
-  }
-}
-```
-
+每个包都需要对应版本的 Zod 作为 peer dependency。
 如果您的项目中还没有安装 Zod，需要一并安装：
 
-```bash
+::: code-group
+
+```bash [npm]
 # Zod v3
 npm install zod@3 @zod-codepen/zod-v3
 
 # Zod v4
 npm install zod@4 @zod-codepen/zod-v4
 ```
+
+```bash [pnpm]
+# Zod v3
+pnpm add zod@3 @zod-codepen/zod-v3
+
+# Zod v4
+pnpm add zod@4 @zod-codepen/zod-v4
+```
+
+```bash [yarn]
+# Zod v3
+yarn add zod@3 @zod-codepen/zod-v3
+
+# Zod v4
+yarn add zod@4 @zod-codepen/zod-v4
+```
+
+:::
 
 ## TypeScript 配置
 
@@ -160,10 +196,30 @@ npx tsx test.ts
 
 如果遇到 `peer dependency` 警告：
 
-```bash
+::: code-group
+
+```bash [npm]
 # 检查 Zod 版本
 npm ls zod
 
 # 安装正确版本
 npm install zod@3  # 或 zod@4
 ```
+
+```bash [pnpm]
+# 检查 Zod 版本
+pnpm ls zod
+
+# 安装正确版本
+pnpm add zod@3  # 或 zod@4
+```
+
+```bash [yarn]
+# 检查 Zod 版本
+yarn list zod
+
+# 安装正确版本
+yarn add zod@3  # 或 zod@4
+```
+
+:::

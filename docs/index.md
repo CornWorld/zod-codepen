@@ -69,12 +69,28 @@ serialize(UserSchema);
 
 ::: code-group
 
-```bash [Zod v3]
+```bash [npm]
+# Zod v3
 npm install @zod-codepen/zod-v3
+
+# Zod v4
+npm install @zod-codepen/zod-v4
 ```
 
-```bash [Zod v4]
-npm install @zod-codepen/zod-v4
+```bash [pnpm]
+# Zod v3
+pnpm add @zod-codepen/zod-v3
+
+# Zod v4
+pnpm add @zod-codepen/zod-v4
+```
+
+```bash [yarn]
+# Zod v3
+yarn add @zod-codepen/zod-v3
+
+# Zod v4
+yarn add @zod-codepen/zod-v4
 ```
 
 :::

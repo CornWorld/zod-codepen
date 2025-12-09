@@ -32,10 +32,11 @@ export default defineConfig({
       { text: 'API', link: '/api/serialize' },
       { text: 'Playground', link: '/playground' },
       {
-        text: '版本',
+        text: '分包',
         items: [
           { text: 'v3 适配器', link: '/guide/zod-v3' },
           { text: 'v4 适配器', link: '/guide/zod-v4' },
+          { text: 'Vite 插件', link: '/guide/vite-plugin' },
         ]
       }
     ],
@@ -69,6 +70,7 @@ export default defineConfig({
         {
           text: '进阶',
           items: [
+            { text: 'Vite Plugin', link: '/guide/vite-plugin' },
             { text: '自定义处理器', link: '/guide/custom-handlers' },
             { text: '支持的类型', link: '/guide/supported-types' },
             { text: '在线 Playground', link: '/playground' },
@@ -83,6 +85,7 @@ export default defineConfig({
             { text: 'generateModule()', link: '/api/generate-module' },
             { text: 'registerHandler()', link: '/api/register-handler' },
             { text: 'createSerializer()', link: '/api/create-serializer' },
+            { text: 'Vite Plugin', link: '/api/vite-plugin' },
           ]
         },
         {

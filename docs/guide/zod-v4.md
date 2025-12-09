@@ -4,9 +4,21 @@
 
 ## 安装
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @zod-codepen/zod-v4
 ```
+
+```bash [pnpm]
+pnpm add @zod-codepen/zod-v4
+```
+
+```bash [yarn]
+yarn add @zod-codepen/zod-v4
+```
+
+:::
 
 ## 导入
 
@@ -158,13 +170,33 @@ if (!type && schema._def?.typeName) {
 1. 更新 Zod 依赖
 2. 更换 zod-codepen 包
 
-```bash
+::: code-group
+
+```bash [npm]
 # 卸载 v3
 npm uninstall @zod-codepen/zod-v3
 
 # 安装 v4
 npm install @zod-codepen/zod-v4
 ```
+
+```bash [pnpm]
+# 卸载 v3
+pnpm remove @zod-codepen/zod-v3
+
+# 安装 v4
+pnpm add @zod-codepen/zod-v4
+```
+
+```bash [yarn]
+# 卸载 v3
+yarn remove @zod-codepen/zod-v3
+
+# 安装 v4
+yarn add @zod-codepen/zod-v4
+```
+
+:::
 
 3. 更新导入
 

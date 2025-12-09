@@ -4,9 +4,21 @@
 
 ## 安装
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install @zod-codepen/zod-v3
 ```
+
+```bash [pnpm]
+pnpm add @zod-codepen/zod-v3
+```
+
+```bash [yarn]
+yarn add @zod-codepen/zod-v3
+```
+
+:::
 
 ## 导入
 
