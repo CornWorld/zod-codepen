@@ -1,6 +1,6 @@
 {
   "name": "@zod-codepen/core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Core serialization logic for zod-to-code",
   "license": "MPL-2.0",
   "type": "module",
