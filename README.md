@@ -1,11 +1,27 @@
-# zod-codepen
+<div style="display: flex; align-items: center; gap: 20px;">
+  <img src="./logo.svg" alt="zod-codepen logo" width="150" />
+  
+  <div>
+  <h1>Zod Codepen</h1>
+
+  <div style="display: flex; gap: 4px; flex-direction: row; align-items: center;">
+  <div>
+
+  [![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v3)
+
+  </div>
+  <div>
+
+  [![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v4)
+
+  </div>
+
+  </div>
+
+  </div>
+</div>
 
 > Serialize Zod schemas to pure Zod code strings at runtime
-
-[![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v3)
-[![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v4)
-[![License: Mozilla Public License 2.0](https://img.shields.io/badge/License-MPL2.0-yellow.svg)](https://choosealicense.com/licenses/mpl-2.0/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 
 **zod-codepen** is a powerful library that converts live Zod schema objects into equivalent TypeScript code strings. Perfect for debugging, code generation, schema visualization, and building developer tools.
 
@@ -34,8 +50,8 @@ npm install @zod-codepen/zod-v4
 ## Quick Start
 
 ```typescript
-import { serialize } from '@zod-codepen/zod-v3'; // or @zod-codepen/zod-v4
-import { z } from 'zod';
+import { serialize } from "@zod-codepen/zod-v3"; // or @zod-codepen/zod-v4
+import { z } from "zod";
 
 // Basic serialization
 serialize(z.string());
@@ -50,7 +66,7 @@ const UserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
   age: z.number().int().min(0).optional(),
-  role: z.enum(['admin', 'user', 'guest']),
+  role: z.enum(["admin", "user", "guest"]),
 });
 
 serialize(UserSchema);
@@ -73,6 +89,7 @@ serialize(schema: unknown, options?: SerializeOptions): string
 ```
 
 **Options:**
+
 - `indent` - Indentation string (default: `'  '`)
 - `format` - Enable pretty-printing (default: `true`)
 - `indentLevel` - Starting indentation level (default: `0`)
@@ -82,11 +99,11 @@ serialize(schema: unknown, options?: SerializeOptions): string
 Generate a complete TypeScript module with named schema exports.
 
 ```typescript
-import { generateModule } from '@zod-codepen/zod-v3';
+import { generateModule } from "@zod-codepen/zod-v3";
 
 const schemas = {
   User: z.object({ id: z.number(), name: z.string() }),
-  Status: z.enum(['active', 'inactive']),
+  Status: z.enum(["active", "inactive"]),
 };
 
 generateModule(schemas);
@@ -105,49 +122,55 @@ generateModule(schemas);
 Register a custom handler for a schema type.
 
 ```typescript
-import { registerHandler } from '@zod-codepen/zod-v3';
+import { registerHandler } from "@zod-codepen/zod-v3";
 
-registerHandler('custom', (schema, ctx) => {
-  return 'z.custom(/* ... */)';
+registerHandler("custom", (schema, ctx) => {
+  return "z.custom(/* ... */)";
 });
 ```
 
 ## Supported Schema Types
 
-| Category | Types |
-|----------|-------|
-| **Primitives** | string, number, boolean, bigint, date, undefined, null, void, any, unknown, never, nan, symbol |
-| **Literals & Enums** | literal, enum, nativeEnum |
-| **Wrappers** | optional, nullable, nullish, default, catch, readonly, branded |
-| **Collections** | array, object, record, map, set, tuple |
-| **Union Types** | union, discriminatedUnion, intersection |
-| **Advanced** | lazy, promise, function, effects, pipe/pipeline |
+| Category             | Types                                                                                          |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| **Primitives**       | string, number, boolean, bigint, date, undefined, null, void, any, unknown, never, nan, symbol |
+| **Literals & Enums** | literal, enum, nativeEnum                                                                      |
+| **Wrappers**         | optional, nullable, nullish, default, catch, readonly, branded                                 |
+| **Collections**      | array, object, record, map, set, tuple                                                         |
+| **Union Types**      | union, discriminatedUnion, intersection                                                        |
+| **Advanced**         | lazy, promise, function, effects, pipe/pipeline                                                |
 
 ### Constraint Support
 
 ```typescript
 // String constraints
-z.string().min(1).max(100).email().url().uuid().regex(/pattern/)
+z.string()
+  .min(1)
+  .max(100)
+  .email()
+  .url()
+  .uuid()
+  .regex(/pattern/);
 
 // Number constraints
-z.number().min(0).max(100).int().positive().negative().finite()
+z.number().min(0).max(100).int().positive().negative().finite();
 
 // Array constraints
-z.array(z.string()).min(1).max(10).nonempty()
+z.array(z.string()).min(1).max(10).nonempty();
 
 // Object modifiers
-z.object({}).strict().passthrough().partial().required()
+z.object({}).strict().passthrough().partial().required();
 ```
 
 ## Zod v3 vs v4 Compatibility
 
 The library handles internal structure differences between Zod versions automatically:
 
-| Feature | v3 | v4 |
-|---------|----|----|
-| Type detection | `_def.typeName` | `_zod.def.type` |
-| Constraint format | `checks: [{kind}]` | `checks: [{_zod: {def}}]` |
-| All v4 variants | - | zod, zod/mini, zod/v4, zod/v4/core |
+| Feature           | v3                 | v4                                 |
+| ----------------- | ------------------ | ---------------------------------- |
+| Type detection    | `_def.typeName`    | `_zod.def.type`                    |
+| Constraint format | `checks: [{kind}]` | `checks: [{_zod: {def}}]`          |
+| All v4 variants   | -                  | zod, zod/mini, zod/v4, zod/v4/core |
 
 Both adapters produce identical output format, making migration seamless.
 

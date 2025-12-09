@@ -939,11 +939,11 @@ builtinHandlers.set('effects', (schema, ctx) => {
     case 'refinement':
       // In v3, refine() and superRefine() both produce the same effect type "refinement"
       // We can't distinguish them, so we output refine() as it's more common
-      return `${innerStr}.refine(/* refinement function */)`;
+      return `${innerStr}.refine((x) => true /* refinement placeholder */)`;
     case 'transform':
-      return `${innerStr}.transform(/* transform function */)`;
+      return `${innerStr}.transform((x) => x /* transform placeholder */)`;
     case 'preprocess':
-      return `z.preprocess(/* preprocess function */, ${innerStr})`;
+      return `z.preprocess((x) => x /* preprocess placeholder */, ${innerStr})`;
     default:
       return innerStr;
   }
@@ -964,7 +964,7 @@ builtinHandlers.set('pipe', (schema, ctx) => {
   if (output && ctx.adapter.isZodSchema(output)) {
     const outType = ctx.adapter.getType(output);
     if (outType === 'transform') {
-      return `${inputStr}.transform(/* transform function */)`;
+      return `${inputStr}.transform((x) => x /* transform placeholder */)`;
     }
     // For other pipe outputs, chain with .pipe()
     return `${inputStr}.pipe(${ctx.serialize(output)})`;
