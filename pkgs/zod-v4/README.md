@@ -1,8 +1,33 @@
-# @zod-codepen/zod-v4
+<div align="center">
+  <img src="https://raw.githubusercontent.com/CornWorld/zod-codepen/main/docs/public/logo.svg" alt="zod-codepen logo" width="128" height="128" />
 
-> Serialize Zod v4 schemas to pure Zod code strings
+  <h1>@zod-codepen/zod-v4</h1>
 
-Supports all Zod v4 variants: `zod`, `zod/mini`, `zod/v4`, `zod/v4/mini`, `zod/v4/core`.
+  <p>
+    <b>Serialize Zod v4 schemas to TypeScript code strings at runtime</b>
+  </p>
+
+  <p>
+    <a href="https://zod-codepen.corn.im">
+      <img src="https://img.shields.io/badge/📖_Documentation-3178c6?style=for-the-badge" alt="Documentation" />
+    </a>
+    <a href="https://zod-codepen.corn.im/playground">
+      <img src="https://img.shields.io/badge/🎮_Playground-3178c6?style=for-the-badge" alt="Playground" />
+    </a>
+  </p>
+
+  <p>
+    <a href="https://www.npmjs.com/package/@zod-codepen/zod-v4">
+      <img src="https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg?style=flat-square&logo=npm" alt="npm version" />
+    </a>
+    <a href="https://github.com/CornWorld/zod-codepen/blob/main/LICENSE">
+      <img src="https://img.shields.io/badge/license-MPL%202.0-blue.svg?style=flat-square" alt="license" />
+    </a>
+  </p>
+</div>
+
+> [!TIP]
+> **@zod-codepen/zod-v4** converts live Zod v4 schema objects into equivalent TypeScript/JavaScript code strings. Supports all Zod v4 variants: `zod`, `zod/mini`, `zod/v4`, `zod/v4/mini`, `zod/v4/core`. Visit our [documentation site](https://zod-codepen.corn.im) for complete guides and API reference.
 
 ## Installation
 

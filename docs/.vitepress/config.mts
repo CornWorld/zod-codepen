@@ -4,6 +4,7 @@ export default defineConfig({
   title: "zod-codepen",
   description: "Serialize Zod schemas to pure Zod code strings at runtime",
   base: '/',
+  cleanUrls: true,
 
   markdown: {
     lineNumbers: false,  // 可以根据需要开启行号
