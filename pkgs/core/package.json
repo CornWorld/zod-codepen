@@ -1,7 +1,8 @@
 {
   "name": "@zod-codepen/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Core serialization logic for zod-to-code",
+  "keywords": ["zod", "schema", "serialization", "code-generation", "typescript"],
   "license": "MPL-2.0",
   "type": "module",
   "main": "./dist/index.js",

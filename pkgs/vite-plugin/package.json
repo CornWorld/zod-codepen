@@ -1,7 +1,8 @@
 {
   "name": "@zod-codepen/vite-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vite plugin to decouple Zod schemas from heavy dependencies",
+  "keywords": ["vite", "vite-plugin", "zod", "schema", "code-generation", "typescript"],
   "license": "MPL-2.0",
   "type": "module",
   "main": "./dist/index.js",
