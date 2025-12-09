@@ -1,29 +1,37 @@
-<div style="display: flex; align-items: center; gap: 20px;">
-  <img src="./logo.svg" alt="zod-codepen logo" width="150" />
+<div align="center">
+  <img src="./docs/public/logo.svg" alt="zod-codepen logo" width="128" height="128" />
   
-  <div>
   <h1>Zod Codepen</h1>
+  
+  <p>
+    <b>Serialize Zod schemas to TypeScript code strings at runtime</b>
+  </p>
 
-  <div style="display: flex; gap: 4px; flex-direction: row; align-items: center;">
-  <div>
+  <p>
+    <a href="https://zod-codepen.corn.im">
+      <img src="https://img.shields.io/badge/Playground-Live_Demo-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="Playground" />
+    </a>
+  </p>
+  
+  <p>
+    <a href="https://www.npmjs.com/package/@zod-codepen/zod-v3">
+      <img src="https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg?style=flat-square&logo=npm&label=zod-v3" alt="zod-v3 version" />
+    </a>
+    <a href="https://www.npmjs.com/package/@zod-codepen/zod-v4">
+      <img src="https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg?style=flat-square&logo=npm&label=zod-v4" alt="zod-v4 version" />
+    </a>
+    <a href="https://www.npmjs.com/package/@zod-codepen/vite-plugin">
+      <img src="https://img.shields.io/npm/v/@zod-codepen/vite-plugin.svg?style=flat-square&logo=npm&label=vite-plugin" alt="vite plugin" />
+    </a>
+  </p>
 
-  [![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v3.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v3)
-
-  </div>
-  <div>
-
-  [![npm version](https://img.shields.io/npm/v/@zod-codepen/zod-v4.svg)](https://www.npmjs.com/package/@zod-codepen/zod-v4)
-
-  </div>
-
-  </div>
-
-  </div>
+  <p>
+    <a href="./README.zh_CN.md">简体中文</a> | <a href="#">English</a>
+  </p>
 </div>
 
-> Serialize Zod schemas to pure Zod code strings at runtime
-
-**zod-codepen** is a powerful library that converts live Zod schema objects into equivalent TypeScript code strings. Perfect for debugging, code generation, schema visualization, and building developer tools.
+> [!TIP]
+> **zod-codepen** is a powerful library that converts live Zod schema objects into equivalent TypeScript/JavaScript code strings. Perfect for debugging, code generation, schema visualization, and building developer tools.
 
 ## Highlights
 
@@ -31,7 +39,7 @@
 - **40+ Schema Types** - Comprehensive coverage of primitives, composites, modifiers, and effects
 - **Smart Constraint Handling** - Semantic method generation (e.g., `.positive()` instead of `.min(0)`)
 - **Formatted Output** - Pretty-printed code with customizable indentation
-- **Module Generation** - Generate complete TypeScript modules with exports
+- **Module Generation** - Generate complete TypeScript/JavaScript modules with exports
 - **Extensible** - Register custom handlers for special schema types
 - **Zero Runtime Overhead** - Tree-shakeable ESM modules
 
