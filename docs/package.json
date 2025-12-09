@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vitepress dev .",
     "build": "vitepress build .",
-    "preview": "vitepress preview ."
+    "preview": "vitepress preview .",
+    "deploy": "pnpm build && wrangler pages deploy .vitepress/dist --project-name=zod-codepen",
+    "deploy:preview": "pnpm build && wrangler pages deploy .vitepress/dist --project-name=zod-codepen --branch=preview"
   },
   "dependencies": {
     "@zod-codepen/zod-v3": "workspace:*",
@@ -14,6 +16,7 @@
     "shiki": "^1.0.0"
   },
   "devDependencies": {
-    "vitepress": "^1.5.0"
+    "vitepress": "^1.5.0",
+    "wrangler": "^4.53.0"
   }
 }
