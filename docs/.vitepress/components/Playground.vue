@@ -7,14 +7,16 @@ type SerializerModule = {
   generateModule: (schemas: Record<string, unknown>, options?: { format?: boolean; indent?: string }) => string
 }
 
-const v3Module = shallowRef<{ z: typeof import('zod').z; serializer: SerializerModule } | null>(null)
-const v4Module = shallowRef<{ z: typeof import('zod').z; serializer: SerializerModule } | null>(null)
+const v3Serializer = shallowRef<SerializerModule | null>(null)
+const v4Serializer = shallowRef<SerializerModule | null>(null)
+const zodInstance = shallowRef<typeof import('zod').z | null>(null)
 const highlighter = shallowRef<Highlighter | null>(null)
 
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-const zodVersion = ref<'v3' | 'v4'>('v3')
+const availableVersions = ref<string[]>([])
+const selectedVersion = ref('')
 const outputMode = ref<'serialize' | 'generateModule'>('serialize')
 const schemaName = ref('UserSchema')
 const formatOutput = ref(true)
@@ -54,49 +56,66 @@ const handleCompositionEnd = () => {
 
 onMounted(async () => {
   try {
+    // Load serializers and highlighter
     const [v3, v4, hl] = await Promise.all([
-      Promise.all([
-        import('zod'),
-        import('@zod-codepen/zod-v3')
-      ]).then(([zod, serializer]) => ({
-        z: zod.z,
-        serializer: serializer as SerializerModule
-      })),
-
-      Promise.all([
-        import('zod'),
-        import('@zod-codepen/zod-v4')
-      ]).then(([zod, serializer]) => ({
-        z: zod.z,
-        serializer: serializer as SerializerModule
-      })).catch(() => null),
-      
+      import('@zod-codepen/zod-v3'),
+      import('@zod-codepen/zod-v4'),
       createHighlighter({
         themes: ['github-light', 'github-dark'],
         langs: ['typescript']
       })
     ])
 
-    v3Module.value = v3
-    v4Module.value = v4
+    v3Serializer.value = v3 as SerializerModule
+    v4Serializer.value = v4 as SerializerModule
     highlighter.value = hl
-    loading.value = false
+
+    // Default to v4
+    selectedVersion.value = '4'
   } catch (e) {
     error.value = `Failed to load: ${e instanceof Error ? e.message : String(e)}`
     loading.value = false
   }
 })
 
-const activeModule = computed(() => {
-  return zodVersion.value === 'v4' ? v4Module.value : v3Module.value
+watch(selectedVersion, async (ver) => {
+  if (!ver) return
+  
+  loading.value = true
+  error.value = null
+  
+  try {
+    // Add ?dev for better error messages
+    const mod = await import(/* @vite-ignore */ `https://esm.sh/zod@${ver}?dev`)
+    zodInstance.value = mod.z
+  } catch (e) {
+    error.value = `Failed to load Zod ${ver}: ${e instanceof Error ? e.message : String(e)}`
+    zodInstance.value = null
+  } finally {
+    loading.value = false
+  }
+})
+
+const activeSerializer = computed(() => {
+  const ver = selectedVersion.value
+  if (!ver) return v3Serializer.value
+  
+  // Use v4 serializer for versions starting with 4, v4, or explicit tags
+  if (
+    ver.startsWith('4') || 
+    ver.startsWith('v4') || 
+    ver === 'latest' || 
+    ver === 'beta' || 
+    ver.includes('alpha')
+  ) {
+    return v4Serializer.value
+  }
+  return v3Serializer.value
 })
 
 const output = computed(() => {
-  const mod = activeModule.value
-  if (!mod) {
-    return zodVersion.value === 'v4'
-      ? '// Zod v4 adapter not installed'
-      : ''
+  if (!zodInstance.value || !activeSerializer.value) {
+    return '// Loading Zod...'
   }
 
   const options = {
@@ -105,14 +124,14 @@ const output = computed(() => {
   }
 
   try {
-    const z = mod.z
+    const z = zodInstance.value
     const fn = new Function('z', `return (${inputCode.value})`)
     const schema = fn(z)
 
     if (outputMode.value === 'generateModule') {
-      return mod.serializer.generateModule({ [schemaName.value]: schema }, options)
+      return activeSerializer.value.generateModule({ [schemaName.value]: schema }, options)
     } else {
-      return mod.serializer.serialize(schema, options)
+      return activeSerializer.value.serialize(schema, options)
     }
   } catch (e) {
     return `// Error: ${e instanceof Error ? e.message : String(e)}`
@@ -390,7 +409,7 @@ function copyOutput() {
     <!-- Loading -->
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
-      <span>Loading serializers...</span>
+      <span>Loading...</span>
     </div>
 
     <!-- Error -->
@@ -402,16 +421,14 @@ function copyOutput() {
       <nav class="nav-bar">
         <div class="nav-left">
           <!-- Version -->
-          <div class="nav-group">
-            <button
-              :class="['nav-btn', { active: zodVersion === 'v3' }]"
-              @mousedown.prevent="zodVersion = 'v3'"
-            >v3</button>
-            <button
-              :class="['nav-btn', { active: zodVersion === 'v4' }]"
-              @mousedown.prevent="zodVersion = 'v4'"
-              :disabled="!v4Module"
-            >v4</button>
+          <div class="nav-group input-group">
+            <span class="input-prefix">zod@</span>
+            <input 
+              v-model.lazy="selectedVersion" 
+              class="version-input"
+              placeholder="version"
+              @keydown.enter="(e) => (e.target as HTMLInputElement).blur()"
+            />
           </div>
 
           <div class="nav-divider"></div>
@@ -591,6 +608,34 @@ function copyOutput() {
 .nav-btn.active {
   background: var(--vp-c-brand-1);
   color: white;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  background: var(--vp-c-bg);
+}
+
+.input-prefix {
+  padding-left: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-mono);
+}
+
+.version-input {
+  width: 80px;
+  padding: 0.375rem 0.5rem 0.375rem 0.25rem;
+  font-size: 0.8rem;
+  font-family: var(--vp-font-family-mono);
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--vp-c-text-1);
+}
+
+.version-input:focus {
+  color: var(--vp-c-brand-1);
 }
 
 .nav-btn:disabled {
