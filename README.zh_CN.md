@@ -37,7 +37,7 @@
 
 - **双版本支持** - 同时支持 Zod v3 和 Zod v4（包括所有 v4 变体，如 zod-mini 和 zod-core）
 - **40+ Schema 类型** - 全面覆盖基础类型、复合类型、修饰符和副作用
-- **智能约束处理** - 语义化方法生成（例如生成 `.positive()` 而不是 `.min(0)`）
+- **代码优化** - 语义化方法（`.positive()`）和科学记数法（`2**31 - 1`）
 - **格式化输出** - 带有可自定义缩进的美化代码
 - **模块生成** - 生成包含导出的完整 TypeScript/JavaScript 模块
 - **可扩展** - 为特殊 Schema 类型注册自定义处理器
@@ -84,6 +84,13 @@ serialize(UserSchema);
 //     age: z.number().int().nonnegative().optional(),
 //     role: z.enum(["admin", "user", "guest"])
 //   })
+
+// 代码优化（默认启用）
+serialize(z.number().min(0));
+// → 'z.number().nonnegative()'
+
+serialize(z.number().max(2147483647));
+// → 'z.number().max(2**31 - 1)'
 ```
 
 ## API 参考

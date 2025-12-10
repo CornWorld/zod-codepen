@@ -37,7 +37,7 @@
 
 - **Dual Version Support** - Works with both Zod v3 and Zod v4 (including all v4 variants)
 - **40+ Schema Types** - Comprehensive coverage of primitives, composites, modifiers, and effects
-- **Smart Constraint Handling** - Semantic method generation (e.g., `.positive()` instead of `.min(0)`)
+- **Code Optimizations** - Semantic methods (`.positive()`) and scientific notation (`2**31 - 1`)
 - **Formatted Output** - Pretty-printed code with customizable indentation
 - **Module Generation** - Generate complete TypeScript/JavaScript modules with exports
 - **Extensible** - Register custom handlers for special schema types
@@ -84,6 +84,13 @@ serialize(UserSchema);
 //     age: z.number().int().nonnegative().optional(),
 //     role: z.enum(["admin", "user", "guest"])
 //   })
+
+// Code optimizations (enabled by default)
+serialize(z.number().min(0));
+// → 'z.number().nonnegative()'
+
+serialize(z.number().max(2147483647));
+// → 'z.number().max(2**31 - 1)'
 ```
 
 ## API Reference

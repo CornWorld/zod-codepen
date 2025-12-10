@@ -8,6 +8,14 @@ export interface SerializeOptions {
   indentLevel?: number;
   /** Whether to format output (default: true) */
   format?: boolean;
+
+  /** Optimization options */
+  optimizations?: {
+    /** Use semantic methods like .positive() instead of .min(0) (default: true) */
+    semanticMethods?: boolean;
+    /** Use scientific notation for powers of 2 (default: true) */
+    scientificNotation?: boolean;
+  };
 }
 
 /**
@@ -59,4 +67,8 @@ export const defaultOptions: Required<SerializeOptions> = {
   indent: '  ',
   indentLevel: 0,
   format: true,
+  optimizations: {
+    semanticMethods: true,
+    scientificNotation: true,
+  },
 };

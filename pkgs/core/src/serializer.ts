@@ -5,6 +5,7 @@ import type {
   SchemaHandler,
 } from './types.js';
 import { defaultOptions } from './types.js';
+import { formatNumber, formatBigInt } from './number-formatter.js';
 
 /**
  * Normalized check structure that works for both v3 and v4
@@ -300,58 +301,93 @@ builtinHandlers.set('number', (schema, ctx) => {
   const checks = normalizeChecks(def);
   let result = prefix;
 
+  // 判断是否使用语义化方法
+  const useSemanticMethods = ctx.options.optimizations?.semanticMethods !== false;
+  const useScientific = ctx.options.optimizations?.scientificNotation !== false;
+
   for (const check of checks) {
     const value = (check.value ?? check.minimum ?? check.maximum) as number | undefined;
     switch (check.kind) {
       case 'min':
-        // positive: min(0, inclusive: false)
-        // nonnegative: min(0, inclusive: true)
-        if (value === 0 && check.inclusive === false) {
-          result += '.positive()';
-        } else if (value === 0 && check.inclusive === true) {
-          result += '.nonnegative()';
-        } else if (
-          value === Number.MIN_SAFE_INTEGER &&
-          check.inclusive === true
-        ) {
-          // safe() adds both min and max, we handle it in max case
-          // Skip here, will be handled in combination
+        // 语义化方法转换
+        if (useSemanticMethods) {
+          // positive: min(0, inclusive: false)
+          // nonnegative: min(0, inclusive: true)
+          if (value === 0 && check.inclusive === false) {
+            result += '.positive()';
+            break;
+          } else if (value === 0 && check.inclusive === true) {
+            result += '.nonnegative()';
+            break;
+          } else if (
+            value === Number.MIN_SAFE_INTEGER &&
+            check.inclusive === true &&
+            // Only skip if we also have MAX_SAFE_INTEGER (for .safe())
+            checks.some(c => c.kind === 'max' && (c.value ?? c.maximum) === Number.MAX_SAFE_INTEGER && c.inclusive === true)
+          ) {
+            // safe() adds both min and max, we handle it in max case
+            // Skip here, will be handled in combination
+            break;
+          }
+        }
+
+        // 使用科学记数法格式化数值
+        if (value !== undefined) {
+          const formatted = useScientific ? formatNumber(value) : String(value);
+          result += `.min(${formatted})`;
         } else {
           result += `.min(${value})`;
         }
         break;
+
       case 'max':
-        // negative: max(0, inclusive: false)
-        // nonpositive: max(0, inclusive: true)
-        if (value === 0 && check.inclusive === false) {
-          result += '.negative()';
-        } else if (value === 0 && check.inclusive === true) {
-          result += '.nonpositive()';
-        } else if (
-          value === Number.MAX_SAFE_INTEGER &&
-          check.inclusive === true
-        ) {
-          // Check if this is part of safe() by looking for matching min
-          const hasMinSafe = checks.some(
-            (c) =>
-              c.kind === 'min' &&
-              (c.value ?? c.minimum) === Number.MIN_SAFE_INTEGER &&
-              c.inclusive === true,
-          );
-          if (hasMinSafe) {
-            result += '.safe()';
-          } else {
-            result += `.max(${value})`;
+        // 语义化方法转换
+        if (useSemanticMethods) {
+          // negative: max(0, inclusive: false)
+          // nonpositive: max(0, inclusive: true)
+          if (value === 0 && check.inclusive === false) {
+            result += '.negative()';
+            break;
+          } else if (value === 0 && check.inclusive === true) {
+            result += '.nonpositive()';
+            break;
+          } else if (
+            value === Number.MAX_SAFE_INTEGER &&
+            check.inclusive === true
+          ) {
+            // Check if this is part of safe() by looking for matching min
+            const hasMinSafe = checks.some(
+              (c) =>
+                c.kind === 'min' &&
+                (c.value ?? c.minimum) === Number.MIN_SAFE_INTEGER &&
+                c.inclusive === true,
+            );
+            if (hasMinSafe) {
+              result += '.safe()';
+              break;
+            }
           }
+        }
+
+        // 使用科学记数法格式化数值
+        if (value !== undefined) {
+          const formatted = useScientific ? formatNumber(value) : String(value);
+          result += `.max(${formatted})`;
         } else {
           result += `.max(${value})`;
         }
         break;
+
       case 'int':
         result += '.int()';
         break;
       case 'multipleOf':
-        result += `.multipleOf(${value})`;
+        if (value !== undefined) {
+          const formatted = useScientific ? formatNumber(value) : String(value);
+          result += `.multipleOf(${formatted})`;
+        } else {
+          result += `.multipleOf(${value})`;
+        }
         break;
       case 'finite':
         result += '.finite()';
@@ -388,33 +424,67 @@ builtinHandlers.set('bigint', (schema, ctx) => {
   const checks = normalizeChecks(def);
   let result = prefix;
 
+  const useSemanticMethods = ctx.options.optimizations?.semanticMethods !== false;
+  const useScientific = ctx.options.optimizations?.scientificNotation !== false;
+
   for (const check of checks) {
     const value = check.value ?? check.minimum ?? check.maximum;
     switch (check.kind) {
       case 'min':
-        // positive: min(0n, inclusive: false)
-        // nonnegative: min(0n, inclusive: true)
-        if (value === 0n && check.inclusive === false) {
-          result += '.positive()';
-        } else if (value === 0n && check.inclusive === true) {
-          result += '.nonnegative()';
-        } else {
+        if (useSemanticMethods) {
+          // positive: min(0n, inclusive: false)
+          // nonnegative: min(0n, inclusive: true)
+          if (value === 0n && check.inclusive === false) {
+            result += '.positive()';
+            break;
+          } else if (value === 0n && check.inclusive === true) {
+            result += '.nonnegative()';
+            break;
+          }
+        }
+
+        if (typeof value === 'bigint') {
+          const formatted = useScientific ? formatBigInt(value) : `${value}n`;
+          result += `.min(${formatted})`;
+        } else if (value !== undefined) {
           result += `.min(${value}n)`;
-        }
-        break;
-      case 'max':
-        // negative: max(0n, inclusive: false)
-        // nonpositive: max(0n, inclusive: true)
-        if (value === 0n && check.inclusive === false) {
-          result += '.negative()';
-        } else if (value === 0n && check.inclusive === true) {
-          result += '.nonpositive()';
         } else {
-          result += `.max(${value}n)`;
+          result += `.min(${value})`;
         }
         break;
+
+      case 'max':
+        if (useSemanticMethods) {
+          // negative: max(0n, inclusive: false)
+          // nonpositive: max(0n, inclusive: true)
+          if (value === 0n && check.inclusive === false) {
+            result += '.negative()';
+            break;
+          } else if (value === 0n && check.inclusive === true) {
+            result += '.nonpositive()';
+            break;
+          }
+        }
+
+        if (typeof value === 'bigint') {
+          const formatted = useScientific ? formatBigInt(value) : `${value}n`;
+          result += `.max(${formatted})`;
+        } else if (value !== undefined) {
+          result += `.max(${value}n)`;
+        } else {
+          result += `.max(${value})`;
+        }
+        break;
+
       case 'multipleOf':
-        result += `.multipleOf(${value}n)`;
+        if (typeof value === 'bigint') {
+          const formatted = useScientific ? formatBigInt(value) : `${value}n`;
+          result += `.multipleOf(${formatted})`;
+        } else if (value !== undefined) {
+          result += `.multipleOf(${value}n)`;
+        } else {
+          result += `.multipleOf(${value})`;
+        }
         break;
       // v4 might have explicit positive/negative checks
       case 'positive':
@@ -1069,11 +1139,19 @@ export function createSerializer(adapter: ZodAdapter) {
     schemas: Record<string, unknown>,
     options: SerializeOptions = {},
   ): string {
-    const lines: string[] = ["import { z } from 'zod';", ''];
+    const opts: Required<SerializeOptions> = {
+      ...defaultOptions,
+      ...options,
+    };
 
+    const lines: string[] = ["import { z } from 'zod';"];
+    lines.push('');
+
+    // 直接生成导出，不进行常量提取
     for (const [name, schema] of Object.entries(schemas)) {
       if (adapter.isZodSchema(schema)) {
-        lines.push(`export const ${name} = ${serialize(schema, options)};`);
+        const serialized = serialize(schema, options);
+        lines.push(`export const ${name} = ${serialized};`);
         lines.push('');
       }
     }

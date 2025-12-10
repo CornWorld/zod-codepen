@@ -55,6 +55,7 @@ export default defineConfig({
           text: '核心概念',
           items: [
             { text: '基本用法', link: '/guide/basic-usage' },
+            { text: '代码优化', link: '/guide/optimizations' },
             { text: '格式化选项', link: '/guide/formatting' },
             { text: '模块生成', link: '/guide/module-generation' },
           ]
