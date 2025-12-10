@@ -26,16 +26,16 @@ importers:
 
   docs:
     dependencies:
+      shiki:
+        specifier: ^1.0.0
+        version: 1.29.2
+    devDependencies:
       '@zod-codepen/zod-v3':
         specifier: workspace:*
         version: link:../pkgs/zod-v3
       '@zod-codepen/zod-v4':
         specifier: workspace:*
         version: link:../pkgs/zod-v4
-      shiki:
-        specifier: ^1.0.0
-        version: 1.29.2
-    devDependencies:
       vitepress:
         specifier: ^1.5.0
         version: 1.6.4(@algolia/client-search@5.46.0)(@types/node@22.19.1)(postcss@8.5.6)(search-insights@2.17.3)(typescript@5.9.3)
