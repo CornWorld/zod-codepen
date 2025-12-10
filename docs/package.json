@@ -11,11 +11,11 @@
     "deploy:preview": "pnpm build && wrangler pages deploy .vitepress/dist --project-name=zod-codepen --branch=preview"
   },
   "dependencies": {
-    "@zod-codepen/zod-v3": "workspace:*",
-    "@zod-codepen/zod-v4": "workspace:*",
     "shiki": "^1.0.0"
   },
   "devDependencies": {
+    "@zod-codepen/zod-v3": "workspace:*",
+    "@zod-codepen/zod-v4": "workspace:*",
     "vitepress": "^1.5.0",
     "wrangler": "^4.53.0"
   }

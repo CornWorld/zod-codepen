@@ -57,9 +57,16 @@ const handleCompositionEnd = () => {
 onMounted(async () => {
   try {
     // Load serializers and highlighter
+    const isDev = import.meta.env.DEV
+
     const [v3, v4, hl] = await Promise.all([
-      import('@zod-codepen/zod-v3'),
-      import('@zod-codepen/zod-v4'),
+      // Use workspace link in dev, CDN in production
+      isDev
+        ? import('@zod-codepen/zod-v3')
+        : import('https://esm.sh/@zod-codepen/zod-v3@latest'),
+      isDev
+        ? import('@zod-codepen/zod-v4')
+        : import('https://esm.sh/@zod-codepen/zod-v4@latest'),
       createHighlighter({
         themes: ['github-light', 'github-dark'],
         langs: ['typescript']
