@@ -7,6 +7,15 @@ export default defineConfig({
   cleanUrls: true,
   srcExclude: ['CLAUDE.md'],
 
+  vite: {
+    build: {
+      rollupOptions: {
+        // Dev-only imports, prod uses esm.sh CDN
+        external: ['@zod-codepen/zod-v3', '@zod-codepen/zod-v4'],
+      },
+    },
+  },
+
   markdown: {
     lineNumbers: false,  // 可以根据需要开启行号
     theme: {
