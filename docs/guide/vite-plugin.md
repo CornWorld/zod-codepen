@@ -1,28 +1,37 @@
 # Vite Plugin
 
-`@zod-codepen/vite-plugin` 提供了与 Vite 的无缝集成，允许你在构建时自动将 Zod 模式转换为独立的 TypeScript 代码文件，从而实现更好的代码分离和优化。
+`@zod-codepen/vite-plugin` 提供 Schema 解耦功能，允许你在构建时将依赖重型库（如 drizzle-orm）的 Zod Schema 转换为纯 Zod 代码文件，从而减少最终产物体积。
 
 ## 为什么需要 Vite Plugin？
 
-在大型项目中，Zod 模式可能会变得非常复杂，包含大量的验证逻辑和类型定义。这会带来几个问题：
+在使用 ORM（如 Drizzle）定义数据模型时，Schema 通常与 ORM 库紧密耦合：
 
-1. **打包体积** - Zod 库本身需要被打包到最终代码中
-2. **运行时开销** - 模式的构建和验证都在运行时进行
-3. **代码分离** - 难以将模式定义与业务逻辑分离
-4. **共享困难** - 在不同项目间共享模式定义变得复杂
+```typescript
+// 原始代码 - 依赖 drizzle-orm
+import { createSelectSchema } from "drizzle-zod";
+import { users } from "./db/schema";
 
-Vite plugin 通过在构建时将 Zod 模式序列化为纯 TypeScript 代码来解决这些问题。
+export const UserSchema = createSelectSchema(users);
+```
+
+问题：
+
+- **打包体积**：整个 drizzle-orm 会被打包进前端代码
+- **Cloudflare Workers**：对包体积敏感的环境无法容纳大型 ORM
+- **运行时依赖**：客户端需要加载不必要的服务端库
+
+解决方案：使用 vite-plugin 在构建时生成纯 Zod 代码，运行时只需要轻量的 zod 库。
 
 ## 安装
 
 ::: code-group
 
-```bash [npm]
-npm install -D @zod-codepen/vite-plugin
-```
-
 ```bash [pnpm]
 pnpm add -D @zod-codepen/vite-plugin
+```
+
+```bash [npm]
+npm install -D @zod-codepen/vite-plugin
 ```
 
 ```bash [yarn]
@@ -31,479 +40,361 @@ yarn add -D @zod-codepen/vite-plugin
 
 :::
 
-## 基本配置
+## 使用模式
 
-### 1. 配置 Vite
+### 模式 1：独立脚本 + 别名插件（推荐）
 
-在 `vite.config.ts` 中添加插件：
+最灵活的方式，适合大多数项目。
+
+#### 步骤 1：创建生成脚本
 
 ```typescript
-import { defineConfig } from 'vite';
-import zodCodepen from '@zod-codepen/vite-plugin';
+// scripts/generate-schemas.ts
+import { generateSchemas } from "@zod-codepen/vite-plugin";
+import * as schemas from "../src/runtime/schema.js";
+
+await generateSchemas({
+  schemas,
+  outputPath: "./src/generated/api-schemas.ts",
+  zodVersion: "v4",
+  verbose: true,
+});
+
+console.log("✅ Schemas generated successfully!");
+```
+
+#### 步骤 2：配置 Vite
+
+```typescript
+// vite.config.ts
+import { defineConfig } from "vite";
+import { zodDecouplingAlias } from "@zod-codepen/vite-plugin";
 
 export default defineConfig({
   plugins: [
-    zodCodepen({
-      // 插件选项
-    })
-  ]
-});
-```
-
-### 2. 标记需要转换的模式
-
-使用特殊的导入后缀来标记需要转换的文件：
-
-```typescript
-// 原始模式文件: schemas/user.ts
-import { z } from 'zod';
-
-export const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  name: z.string().min(1).max(100),
-  age: z.number().int().positive().optional(),
-});
-
-export const CreateUserSchema = UserSchema.omit({ id: true });
-```
-
-```typescript
-// 使用转换后的模式
-import { UserSchema, CreateUserSchema } from './schemas/user?codepen';
-
-// UserSchema 现在是序列化后的代码字符串
-console.log(UserSchema);
-// 输出: "z.object({ id: z.string().uuid(), ... })"
-```
-
-## 配置选项
-
-```typescript
-interface ZodCodepenViteOptions {
-  /**
-   * 包含模式转换的文件模式
-   * @default ['**/*.schema.ts', '**/*.schema.js']
-   */
-  include?: string | string[];
-
-  /**
-   * 排除的文件模式
-   * @default ['node_modules/**']
-   */
-  exclude?: string | string[];
-
-  /**
-   * 输出格式
-   * @default 'esm'
-   */
-  format?: 'esm' | 'cjs' | 'iife';
-
-  /**
-   * 是否生成 source maps
-   * @default true
-   */
-  sourcemap?: boolean;
-
-  /**
-   * 是否在开发模式下启用
-   * @default false
-   */
-  enableInDev?: boolean;
-
-  /**
-   * 自定义转换函数
-   */
-  transform?: (code: string, id: string) => string | null;
-}
-```
-
-## 使用场景
-
-### 1. Schema 文档生成
-
-自动生成 API 文档中的模式定义：
-
-```typescript
-// vite.config.ts
-import zodCodepen from '@zod-codepen/vite-plugin';
-
-export default {
-  plugins: [
-    zodCodepen({
-      include: 'src/schemas/*.ts',
-    })
-  ]
-};
-```
-
-```typescript
-// src/docs/api.md.ts
-import schemas from '../schemas/*.ts?codepen';
-
-export function generateAPIDocs() {
-  return Object.entries(schemas).map(([name, code]) => `
-## ${name}
-
-\`\`\`typescript
-${code}
-\`\`\`
-  `).join('\n');
-}
-```
-
-### 2. 模式验证分离
-
-将验证逻辑与模式定义分离：
-
-```typescript
-// schemas/user.schema.ts
-import { z } from 'zod';
-
-export const UserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  profile: z.object({
-    name: z.string(),
-    bio: z.string().optional(),
-    avatar: z.string().url().optional(),
-  }),
-});
-```
-
-```typescript
-// validators/user.ts
-import { UserSchema } from '../schemas/user.schema?codepen';
-import { z } from 'zod';
-
-// 动态重建模式用于验证
-const schema = eval(UserSchema);
-
-export function validateUser(data: unknown) {
-  return schema.parse(data);
-}
-```
-
-### 3. 跨项目共享模式
-
-生成可以在多个项目中使用的模式定义：
-
-```typescript
-// build-schemas.ts
-import { generateModule } from '@zod-codepen/zod-v3';
-import * as schemas from './schemas';
-import fs from 'fs';
-
-// 构建时生成独立的模式文件
-const code = generateModule(schemas);
-fs.writeFileSync('dist/schemas.ts', code);
-```
-
-### 4. 模式版本管理
-
-跟踪模式的变更历史：
-
-```typescript
-// vite.config.ts
-import zodCodepen from '@zod-codepen/vite-plugin';
-import crypto from 'crypto';
-
-export default {
-  plugins: [
-    zodCodepen({
-      transform(code, id) {
-        // 为每个模式生成哈希值
-        const hash = crypto
-          .createHash('md5')
-          .update(code)
-          .digest('hex')
-          .substring(0, 8);
-
-        return `/* Schema version: ${hash} */\n${code}`;
-      }
-    })
-  ]
-};
-```
-
-## 高级用法
-
-### 自定义转换器
-
-创建自定义转换逻辑：
-
-```typescript
-// vite.config.ts
-import zodCodepen from '@zod-codepen/vite-plugin';
-
-export default {
-  plugins: [
-    zodCodepen({
-      transform(code, id) {
-        // 只转换特定的导出
-        if (id.includes('internal')) {
-          return null; // 跳过内部模式
-        }
-
-        // 添加自定义注释
-        return `/**
- * Auto-generated from ${id}
- * @generated ${new Date().toISOString()}
- */
-${code}`;
-      }
-    })
-  ]
-};
-```
-
-### 与其他插件集成
-
-与其他 Vite 插件协同工作：
-
-```typescript
-import { defineConfig } from 'vite';
-import zodCodepen from '@zod-codepen/vite-plugin';
-import dts from 'vite-plugin-dts';
-
-export default defineConfig({
-  plugins: [
-    // 先转换模式
-    zodCodepen({
-      include: 'src/**/*.schema.ts',
-    }),
-    // 然后生成类型声明
-    dts({
-      include: ['src/**/*.ts'],
+    zodDecouplingAlias({
+      // 原始导入路径（代码中使用的）
+      aliasFrom: "../runtime/schema.js",
+      // 生成文件的路径（构建时替换）
+      aliasTo: "./src/generated/api-schemas.ts",
     }),
   ],
 });
 ```
 
-### 条件转换
+#### 步骤 3：配置 package.json
 
-根据环境变量控制转换行为：
-
-```typescript
-import zodCodepen from '@zod-codepen/vite-plugin';
-
-export default {
-  plugins: [
-    zodCodepen({
-      // 仅在生产构建时启用
-      enableInDev: false,
-
-      // 根据环境变量决定包含哪些文件
-      include: process.env.INCLUDE_INTERNAL
-        ? ['src/**/*.schema.ts']
-        : ['src/public/**/*.schema.ts'],
-    })
-  ]
-};
-```
-
-## 性能优化
-
-### 1. 缓存机制
-
-插件自动缓存转换结果以提高构建性能：
-
-```typescript
-zodCodepen({
-  // 缓存配置（默认启用）
-  cache: {
-    enabled: true,
-    directory: 'node_modules/.vite/zod-codepen',
+```json
+{
+  "scripts": {
+    "generate:schemas": "tsx scripts/generate-schemas.ts",
+    "build": "pnpm generate:schemas && vite build",
+    "dev": "vite"
   }
-})
+}
 ```
 
-### 2. 并行处理
+### 模式 2：一体化插件（简单场景）
 
-对于大型项目，启用并行处理：
+适合 Schema 文件在构建时可直接导入的情况。
 
 ```typescript
-zodCodepen({
-  // 使用 Worker 线程进行并行转换
-  parallel: true,
-  // 最大并行数
-  maxWorkers: 4,
-})
+// vite.config.ts
+import { defineConfig } from "vite";
+import { zodDecoupling } from "@zod-codepen/vite-plugin";
+
+export default defineConfig({
+  plugins: [
+    zodDecoupling({
+      schemaEntry: "./src/runtime/schema.ts",
+      outputPath: "./src/generated/api-schemas.ts",
+      aliasFrom: "../runtime/schema.js",
+      zodVersion: "v4",
+    }),
+  ],
+});
 ```
 
-### 3. 选择性转换
+::: warning 注意
+一体化插件要求 schema 文件在 Vite 构建时可导入。如果 schema 依赖 drizzle-orm 等服务端库，请使用模式 1。
+:::
 
-只转换真正需要的模式：
+## API 参考
+
+### generateSchemas(options)
+
+独立生成函数，将运行时 Schema 序列化为纯 Zod 代码文件。
 
 ```typescript
-// 使用查询参数控制转换
-import { UserSchema } from './schemas/user?codepen';
-import { PostSchema } from './schemas/post'; // 不转换
+interface GenerateSchemaOptions {
+  // Schema 映射对象（键为导出名，值为 Zod schema）
+  schemas: Record<string, unknown>;
 
-// 或使用动态导入
-const schemas = await Promise.all([
-  import('./schemas/user?codepen'),
-  import('./schemas/post?codepen'),
-]);
+  // 输出文件路径
+  outputPath: string;
+
+  // Zod 版本（默认 'v4'）
+  zodVersion?: "v3" | "v4";
+
+  // 过滤函数（默认排除 $ 前缀和 Type 后缀）
+  filter?: (name: string, schema: unknown) => boolean;
+
+  // 是否生成类型导出（默认 true）
+  includeTypes?: boolean;
+
+  // 自定义文件头
+  header?: string;
+
+  // 序列化选项
+  serializeOptions?: SerializeOptions;
+
+  // 详细日志（默认 false）
+  verbose?: boolean;
+}
 ```
 
-## 调试
+### zodDecouplingAlias(options)
 
-### 启用调试输出
+仅设置模块别名的轻量级 Vite 插件。
 
 ```typescript
-zodCodepen({
-  debug: true, // 输出详细的转换日志
-})
+interface ZodDecouplingAliasOptions {
+  // 要替换的导入路径
+  aliasFrom: string;
+
+  // 目标文件路径（相对于项目根目录）
+  aliasTo: string;
+}
 ```
 
-### 查看转换结果
+### zodDecoupling(options)
+
+完整的 Vite 插件，在 `buildStart` 时自动生成 Schema 并设置别名。
 
 ```typescript
-// 在开发服务器中查看转换结果
-import { UserSchema } from './schemas/user?codepen&raw';
-console.log(UserSchema); // 原始转换输出
+interface ZodDecouplingOptions extends GenerateSchemaOptions {
+  // Schema 入口文件路径
+  schemaEntry: string;
+
+  // 要替换的导入路径
+  aliasFrom: string;
+}
+```
+
+## 实际示例
+
+### 示例 1：Drizzle ORM Schema 解耦
+
+**原始代码（服务端）：**
+
+```typescript
+// src/runtime/schema.ts
+import { createSelectSchema, createInsertSchema } from "drizzle-zod";
+import { users, posts } from "./db/schema";
+
+export const User = createSelectSchema(users);
+export const CreateUser = createInsertSchema(users);
+export const Post = createSelectSchema(posts);
+
+// 类型导出（会被过滤）
+export type UserType = typeof User._type;
+```
+
+**生成脚本：**
+
+```typescript
+// scripts/generate-schemas.ts
+import { generateSchemas } from "@zod-codepen/vite-plugin";
+
+// 动态导入服务端代码
+const schemas = await import("../src/runtime/schema.js");
+
+await generateSchemas({
+  schemas,
+  outputPath: "./src/generated/api-schemas.ts",
+  zodVersion: "v4",
+  filter: (name) => {
+    // 排除内部变量和类型
+    if (name.startsWith("$") || name.endsWith("Type")) return false;
+    return true;
+  },
+  verbose: true,
+});
+```
+
+**生成的文件：**
+
+```typescript
+// src/generated/api-schemas.ts
+/**
+ * AUTO-GENERATED FILE - DO NOT EDIT
+ *
+ * Generated by @zod-codepen/vite-plugin at 2025-12-11T06:00:00.000Z
+ */
+
+import { z } from "zod";
+
+export const User = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+  createdAt: z.date(),
+});
+
+export const CreateUser = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+export const Post = z.object({
+  id: z.number(),
+  title: z.string().min(1).max(100),
+  content: z.string(),
+  authorId: z.number(),
+  published: z.boolean().default(false),
+});
+
+// Type exports
+export type User = z.infer<typeof User>;
+export type CreateUser = z.infer<typeof CreateUser>;
+export type Post = z.infer<typeof Post>;
+```
+
+### 示例 2：自定义过滤器
+
+只导出以 `Api` 开头的 Schema：
+
+```typescript
+await generateSchemas({
+  schemas,
+  outputPath: "./src/generated/api.ts",
+  filter: (name, schema) => {
+    // 只包含 API 相关的 Schema
+    return name.startsWith("Api");
+  },
+});
+```
+
+### 示例 3：自定义文件头
+
+添加许可证和生成信息：
+
+```typescript
+await generateSchemas({
+  schemas,
+  outputPath: "./src/generated/schemas.ts",
+  header: `/**
+ * @license MIT
+ * @generated by zod-codepen
+ * @see https://github.com/CornWorld/zod-codepen
+ *
+ * DO NOT EDIT - This file is auto-generated
+ */`,
+});
+```
+
+### 示例 4：禁用类型导出
+
+只生成 Schema，不生成类型：
+
+```typescript
+await generateSchemas({
+  schemas,
+  outputPath: "./src/generated/schemas.ts",
+  includeTypes: false,
+});
+```
+
+## 工作流程
+
+```mermaid
+graph LR
+    A[运行时 Schema<br/>含 drizzle-orm] --> B[generateSchemas]
+    B --> C[纯 Zod 代码文件]
+    C --> D[Vite 别名替换]
+    D --> E[最终产物<br/>无 drizzle-orm]
 ```
 
 ## 最佳实践
 
-### 1. 文件组织
+### 1. 版本控制生成文件
 
-推荐的项目结构：
+推荐将生成的文件提交到 Git：
 
-```
-src/
-├── schemas/          # 原始 Zod 模式
-│   ├── user.schema.ts
-│   ├── post.schema.ts
-│   └── index.ts
-├── generated/        # 生成的代码
-│   └── schemas.ts
-└── validators/       # 验证逻辑
-    └── index.ts
+```bash
+# .gitignore
+# 不要忽略生成的 schema 文件
+# !src/generated/
 ```
 
-### 2. 命名约定
+优点：
 
-- 使用 `.schema.ts` 后缀标识模式文件
-- 导出名称使用 PascalCase + Schema 后缀
-- 生成的文件使用 `.generated.ts` 后缀
+- 团队成员无需运行生成脚本即可构建
+- CI/CD 更稳定
+- 可以追踪 Schema 变更历史
 
-### 3. 类型安全
-
-确保生成的代码保持类型安全：
-
-```typescript
-// schemas/user.schema.ts
-import { z } from 'zod';
-
-export const UserSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-});
-
-// 导出类型定义
-export type User = z.infer<typeof UserSchema>;
-```
-
-```typescript
-// 使用时保持类型
-import type { User } from './schemas/user.schema';
-import { UserSchema } from './schemas/user.schema?codepen';
-
-function processUser(user: User) {
-  // 类型安全的操作
-}
-```
-
-## 故障排除
-
-### 常见问题
-
-**Q: 转换后的代码无法执行？**
-
-A: 确保你的运行时环境中有 Zod 可用：
-
-```typescript
-// 确保 Zod 在全局作用域可用
-window.z = z; // 浏览器环境
-global.z = z; // Node.js 环境
-```
-
-**Q: HMR (热模块替换) 不工作？**
-
-A: 在开发模式下启用插件：
-
-```typescript
-zodCodepen({
-  enableInDev: true,
-})
-```
-
-**Q: 构建时间过长？**
-
-A: 优化包含/排除模式，只转换必要的文件：
-
-```typescript
-zodCodepen({
-  include: ['src/schemas/**/*.schema.ts'],
-  exclude: ['**/*.test.ts', '**/*.spec.ts'],
-})
-```
-
-## 迁移指南
-
-### 从手动序列化迁移
-
-如果你之前手动使用 `serialize()` 函数：
-
-```typescript
-// 之前
-import { serialize } from '@zod-codepen/zod-v3';
-import { UserSchema } from './schemas';
-
-const code = serialize(UserSchema);
-```
-
-```typescript
-// 现在
-import { UserSchema } from './schemas/user?codepen';
-// code 已经自动生成
-```
-
-### 从其他构建工具迁移
-
-如果你从 Webpack 或 Rollup 迁移：
-
-```typescript
-// webpack.config.js
-module.exports = {
-  module: {
-    rules: [
-      {
-        test: /\.schema\.ts$/,
-        use: 'zod-codepen-loader', // 假设的 loader
-      }
-    ]
-  }
-};
-```
+### 2. 开发与生产环境分离
 
 ```typescript
 // vite.config.ts
-import zodCodepen from '@zod-codepen/vite-plugin';
+import { defineConfig } from "vite";
+import { zodDecouplingAlias } from "@zod-codepen/vite-plugin";
 
-export default {
+export default defineConfig(({ mode }) => ({
   plugins: [
-    zodCodepen({
-      include: '**/*.schema.ts',
-    })
-  ]
-};
+    // 仅在生产环境使用别名
+    mode === "production" &&
+      zodDecouplingAlias({
+        aliasFrom: "../runtime/schema.js",
+        aliasTo: "./src/generated/api-schemas.ts",
+      }),
+  ].filter(Boolean),
+}));
 ```
+
+### 3. 命名约定
+
+```
+src/
+├── runtime/           # 原始 Schema（含 ORM 依赖）
+│   └── schema.ts
+├── generated/         # 生成的纯 Zod Schema
+│   └── api-schemas.ts
+└── validators/        # 业务验证逻辑
+    └── index.ts
+```
+
+## 常见问题
+
+### Q: 为什么推荐独立脚本模式？
+
+A: 独立脚本模式更灵活：
+
+- 可以在 Vite 外部运行（如 CI/CD）
+- 不受 Vite 构建时导入限制
+- 更容易调试
+
+### Q: 如何在 CI/CD 中使用？
+
+```yaml
+# GitHub Actions 示例
+- name: Generate Schemas
+  run: pnpm generate:schemas
+
+- name: Build
+  run: pnpm build
+```
+
+### Q: 生成的文件可以手动编辑吗？
+
+不建议。文件头包含 `DO NOT EDIT` 警告。如需自定义，请使用 `header` 选项或创建包装模块。
+
+### Q: 支持 HMR 吗？
+
+`zodDecouplingAlias` 不影响 HMR。开发时建议直接导入运行时 Schema，仅在构建时使用生成文件。
 
 ## 下一步
 
 - [API 参考](/api/vite-plugin) - 完整的 API 文档
-- [示例项目](https://github.com/CornWorld/zod-codepen/tree/main/examples/vite) - 实际使用示例
-- [性能基准](https://github.com/CornWorld/zod-codepen/blob/main/benchmarks) - 性能测试结果
+- [基本用法](/guide/basic-usage) - 了解 serialize 函数
+- [模块生成](/guide/module-generation) - 生成完整模块

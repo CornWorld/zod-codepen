@@ -1,0 +1,27 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^/"
+    },
+    {
+      "pattern": "^https://github.com/CornWorld/zod-codepen"
+    },
+    {
+      "pattern": "^https://zod-codepen.corn.im"
+    },
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^#"
+    },
+    {
+      "pattern": "^https://www.npmjs.com"
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 206]
+}

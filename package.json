@@ -9,20 +9,35 @@
     "test": "pnpm -r test",
     "test:v3": "pnpm --filter @zod-codepen/zod-v3 test",
     "test:v4": "pnpm --filter @zod-codepen/zod-v4 test",
+    "test:vite-plugin": "pnpm --filter @zod-codepen/vite-plugin test",
+    "test:coverage": "pnpm -r --filter './pkgs/*' exec vitest run --coverage",
     "lint": "eslint .",
     "clean": "pnpm -r clean",
     "docs:dev": "pnpm --filter @zod-codepen/docs dev",
     "docs:build": "pnpm --filter @zod-codepen/docs build",
-    "docs:preview": "pnpm --filter @zod-codepen/docs preview"
+    "docs:preview": "pnpm --filter @zod-codepen/docs preview",
+    "docs:check-links": "pnpm --filter @zod-codepen/docs check:links",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.16.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix"
+    ],
+    "*.{ts,tsx,js,jsx,json,md}": [
+      "prettier --write"
+    ]
   }
 }

@@ -24,7 +24,7 @@ export interface SerializeOptions {
 export interface SchemaInfo {
   type: string;
   def?: Record<string, unknown>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   original?: any;
 }
 
@@ -39,7 +39,7 @@ export interface ZodAdapter {
   /** Check if the value is a Zod schema */
   isZodSchema(value: unknown): boolean;
   /** Get Zod version identifier */
-  version: 'v3' | 'v4';
+  version: "v3" | "v4";
 }
 
 /**
@@ -64,7 +64,7 @@ export interface SerializerContext {
  * Default serialization options
  */
 export const defaultOptions: Required<SerializeOptions> = {
-  indent: '  ',
+  indent: "  ",
   indentLevel: 0,
   format: true,
   optimizations: {
