@@ -87,7 +87,7 @@ After deep-diving into 30+ projects from the official Zod ecosystem, we've ident
 
 ## Category 3: Zod to X (Code Generation) - **MOST RELEVANT TO ZOD-CODEPEN**
 
-### 3.1 Prisma Zod Generator (768⭐) - **ANALYZED IN DEPTH**
+### 3.1 Prisma Zod Generator (775⭐) - **ANALYZED IN DEPTH**
 - **Focus**: Prisma → Zod schemas
 - **Architecture**:
   - Prisma generator plugin
@@ -218,7 +218,8 @@ export const useGetUser = (id: string) => {
   - **Ecosystem Tool**: Comprehensive API toolkit
   - **Potential Integration**: Kubb could use zod-codepen for schema visualization
 
-### 4.4 Prisma Zod Generator (777⭐) - Already covered above
+### 4.4 Prisma Zod Generator (775⭐)
+- See detailed analysis in Section 3.1 above
 
 ### 4.5 DRZL (81⭐)
 - **Focus**: Drizzle ORM → Zod validators
