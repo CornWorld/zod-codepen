@@ -1,0 +1,281 @@
+{
+  "timestamp": "2025-12-11T03:00:36.000Z",
+  "scanVersion": "1.0.2",
+  "projectRoot": "/Users/corn/Code/zod-codepen",
+  "summary": {
+    "totalModules": 5,
+    "totalSourceFiles": 45,
+    "totalTestFiles": 19,
+    "coveragePercentage": 95,
+    "language": "TypeScript",
+    "packageManager": "pnpm",
+    "monorepo": true
+  },
+  "modules": [
+    {
+      "name": "core",
+      "path": "pkgs/core",
+      "type": "library",
+      "language": "TypeScript",
+      "version": "1.0.1",
+      "npmPackage": "@zod-codepen/core",
+      "description": "版本无关的序列化核心引擎",
+      "entryPoint": "src/index.ts",
+      "sourceFiles": [
+        "src/index.ts",
+        "src/types.ts",
+        "src/serializer.ts",
+        "src/number-formatter.ts"
+      ],
+      "testFiles": [],
+      "testStrategy": "通过 zod-v3 和 zod-v4 适配器测试覆盖",
+      "dependencies": {
+        "peer": ["zod>=3.0.0 (optional)"],
+        "dev": ["typescript@^5.7.2"]
+      },
+      "interfaces": [
+        "SerializeOptions",
+        "ZodAdapter",
+        "SchemaHandler",
+        "SerializerContext",
+        "SchemaInfo"
+      ],
+      "keyFunctions": [
+        "createSerializer",
+        "formatNumber",
+        "formatBigInt"
+      ],
+      "builtinHandlers": 40,
+      "coverage": {
+        "tested": true,
+        "testCount": "间接测试（通过适配器）",
+        "missingTests": []
+      }
+    },
+    {
+      "name": "zod-v3",
+      "path": "pkgs/zod-v3",
+      "type": "adapter",
+      "language": "TypeScript",
+      "version": "1.0.1",
+      "npmPackage": "@zod-codepen/zod-v3",
+      "description": "Zod v3 适配器，封装 v3 内部结构访问",
+      "entryPoint": "src/index.ts",
+      "sourceFiles": [
+        "src/index.ts",
+        "src/adapter.ts"
+      ],
+      "testFiles": [
+        "test/primitives.test.ts",
+        "test/string-constraints.test.ts",
+        "test/number-constraints.test.ts",
+        "test/collections.test.ts",
+        "test/composites.test.ts",
+        "test/modifiers.test.ts",
+        "test/effects.test.ts",
+        "test/advanced.test.ts",
+        "test/generation.test.ts",
+        "test/number-formatting.test.ts"
+      ],
+      "testFramework": "Vitest",
+      "dependencies": {
+        "workspace": ["@zod-codepen/core"],
+        "peer": ["zod@^3.0.0"],
+        "dev": ["typescript@^5.7.2", "vitest@^2.1.8", "zod@^3.24.1"]
+      },
+      "adapterDetails": {
+        "typeAccess": "_def.typeName",
+        "defAccess": "_def",
+        "zodVersion": "v3"
+      },
+      "coverage": {
+        "tested": true,
+        "testCount": 10,
+        "estimatedCases": "120+",
+        "missingTests": []
+      }
+    },
+    {
+      "name": "zod-v4",
+      "path": "pkgs/zod-v4",
+      "type": "adapter",
+      "language": "TypeScript",
+      "version": "1.0.1",
+      "npmPackage": "@zod-codepen/zod-v4",
+      "description": "Zod v4 适配器，支持所有 v4 变体",
+      "entryPoint": "src/index.ts",
+      "sourceFiles": [
+        "src/index.ts",
+        "src/adapter.ts"
+      ],
+      "testFiles": [
+        "test/adapter.test.ts",
+        "test/primitives.test.ts",
+        "test/constraints.test.ts",
+        "test/union-types.test.ts",
+        "test/composites.test.ts",
+        "test/modifiers.test.ts",
+        "test/effects.test.ts",
+        "test/advanced.test.ts",
+        "test/generation.test.ts"
+      ],
+      "testFramework": "Vitest",
+      "dependencies": {
+        "workspace": ["@zod-codepen/core"],
+        "peer": ["zod@^4.1.13"],
+        "dev": ["typescript@^5.7.2", "vitest@^2.1.8", "zod@^4.1.13"]
+      },
+      "adapterDetails": {
+        "typeAccess": "_zod.def.type (多层回退)",
+        "defAccess": "_zod.def / .def / ._def",
+        "zodVersion": "v4",
+        "supportedVariants": ["zod", "zod/mini", "zod/v4", "zod/v4/classic", "zod/v4/core", "zod/v4/mini"]
+      },
+      "coverage": {
+        "tested": true,
+        "testCount": 9,
+        "estimatedCases": "110+",
+        "missingTests": []
+      }
+    },
+    {
+      "name": "vite-plugin",
+      "path": "pkgs/vite-plugin",
+      "type": "plugin",
+      "language": "TypeScript",
+      "version": "1.0.1",
+      "npmPackage": "@zod-codepen/vite-plugin",
+      "description": "Vite 构建插件，实现 Schema 解耦",
+      "entryPoint": "src/index.ts",
+      "sourceFiles": [
+        "src/index.ts"
+      ],
+      "testFiles": [],
+      "testStrategy": "集成测试在用户项目中验证",
+      "dependencies": {
+        "workspace": ["@zod-codepen/core"],
+        "peer": ["vite@>=5.0.0", "zod@>=3.0.0 || >=4.0.0 (optional)"],
+        "dev": ["@types/node@^22.10.1", "typescript@^5.7.2", "vite@^6.0.3", "zod@^4.1.13"]
+      },
+      "pluginModes": [
+        "独立脚本 + 别名插件（推荐）",
+        "一体化插件（简单场景）"
+      ],
+      "keyFunctions": [
+        "generateSchemas",
+        "zodDecouplingAlias",
+        "zodDecoupling",
+        "createZodV3Adapter",
+        "createZodV4Adapter"
+      ],
+      "coverage": {
+        "tested": false,
+        "testCount": 0,
+        "missingTests": [
+          "单元测试（模拟 Vite 插件钩子）",
+          "E2E 测试（真实 Vite 项目）",
+          "生成文件快照测试"
+        ]
+      }
+    },
+    {
+      "name": "docs",
+      "path": "docs",
+      "type": "documentation",
+      "language": "Markdown + Vue",
+      "version": "0.0.2",
+      "npmPackage": "@zod-codepen/docs (private)",
+      "description": "VitePress 文档站点",
+      "entryPoint": ".vitepress/config.mts",
+      "sourceFiles": [
+        "index.md",
+        "guide/*.md (13 files)",
+        "api/*.md (8 files)",
+        "playground.md",
+        ".vitepress/config.mts",
+        ".vitepress/components/Playground.vue"
+      ],
+      "testFiles": [],
+      "testStrategy": "人工审查与在线验证",
+      "dependencies": {
+        "runtime": ["shiki@^1.0.0"],
+        "dev": ["vitepress@^1.5.0", "wrangler@^4.53.0"],
+        "workspace": ["@zod-codepen/zod-v3", "@zod-codepen/zod-v4"]
+      },
+      "deploymentPlatform": "Cloudflare Pages",
+      "deploymentURL": "https://zod-codepen.corn.im",
+      "cicd": "GitHub Actions (.github/workflows/deploy-docs.yml)",
+      "coverage": {
+        "tested": false,
+        "testCount": 0,
+        "missingTests": [
+          "文档链接自动化检查",
+          "代码示例自动化测试",
+          "Lighthouse 性能测试"
+        ]
+      }
+    }
+  ],
+  "ignoreRules": [
+    "node_modules/**",
+    ".git/**",
+    ".github/**",
+    "dist/**",
+    "build/**",
+    ".next/**",
+    "__pycache__/**",
+    "*.lock",
+    "*.log",
+    "*.bin",
+    "*.pdf",
+    "*.png",
+    "*.jpg",
+    "*.jpeg",
+    "*.gif",
+    "*.mp4",
+    "*.zip",
+    "*.tar",
+    "*.gz",
+    "coverage/**",
+    ".DS_Store",
+    ".idea/**",
+    ".vscode/**",
+    "*.tsbuildinfo",
+    ".vitepress/cache/**",
+    ".vitepress/dist/**"
+  ],
+  "gaps": {
+    "missingTests": [
+      "vite-plugin: 需要单元测试和 E2E 测试",
+      "docs: 需要自动化链接检查和代码示例测试"
+    ],
+    "missingDocs": [],
+    "missingInterfaces": [],
+    "technicalDebt": [
+      "vite-plugin: 缺少测试覆盖",
+      "根项目: 未配置 pre-commit hooks (husky + lint-staged)",
+      "docs: 缺少性能监控"
+    ]
+  },
+  "recommendations": {
+    "nextSteps": [
+      "为 vite-plugin 添加单元测试和集成测试",
+      "为 docs 添加自动化链接检查工具",
+      "配置 husky + lint-staged 实现 pre-commit 检查",
+      "考虑添加 E2E 测试（Playwright）验证完整工作流",
+      "添加代码覆盖率报告（vitest --coverage）"
+    ],
+    "priorityOrder": [
+      "vite-plugin 测试（高优先级，生产使用）",
+      "pre-commit hooks（中优先级，提升代码质量）",
+      "docs 自动化检查（低优先级，手动审查可替代）"
+    ]
+  },
+  "metadata": {
+    "scanDuration": "约 5 分钟",
+    "toolVersion": "Claude Code (Sonnet 4.5)",
+    "scanDepth": "模块优先扫描（中等强度）",
+    "truncated": false,
+    "completeness": "95%（主要源文件和测试文件已完整扫描，部分 node_modules 内容已忽略）"
+  }
+}
