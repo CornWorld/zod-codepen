@@ -207,7 +207,7 @@ This document provides detailed technical comparisons of Zod ecosystem projects 
 
 | Project | Language | Build Tool | Test Framework | Code Style | Documentation Site | API Stability |
 |---------|----------|------------|---------------|------------|-------------------|---------------|
-| **zod-codepen** | TypeScript | Modern bundler | Likely Vitest/Jest | Modern TS | Likely planned | Beta |
+| **zod-codepen** | TypeScript | Modern bundler | TBD | Modern TS | TBD | Beta |
 | **Orval** | TypeScript | Yarn + Turbo | Vitest | ESLint + Prettier | ✅ orval.dev | Stable v7 |
 | **Kubb** | TypeScript | PNPM + Turbo | Vitest | Biome | ✅ kubb.dev | Stable v3 |
 | **tRPC** | TypeScript | PNPM | Vitest | ESLint + Prettier | ✅ trpc.io | Stable v11 |
@@ -242,11 +242,11 @@ This document provides detailed technical comparisons of Zod ecosystem projects 
 
 | Integration Type | Feasibility | Value | Priority |
 |-----------------|-------------|-------|----------|
-| @traversable/zod transformer | ✅ High | High | 🔥 HIGH |
-| VS Code extension | ✅ High | Very High | 🔥 HIGH |
-| Zod Playground integration | ✅ Medium | High | ⚠️ MEDIUM |
-| Orval/Kubb output formatter | ✅ Medium | Medium | ⚠️ MEDIUM |
-| tRPC schema visualizer | ✅ Low | Medium | ⬇️ LOW |
+| @traversable/zod transformer | ✅ High | High | HIGH |
+| VS Code extension | ✅ High | Very High | HIGH |
+| Zod Playground integration | ✅ Medium | High | MEDIUM |
+| Orval/Kubb output formatter | ✅ Medium | Medium | MEDIUM |
+| tRPC schema visualizer | ✅ Low | Medium | LOW |
 
 ---
 
