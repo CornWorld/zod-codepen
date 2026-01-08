@@ -6,6 +6,7 @@ import type {
 } from "./types.js";
 import { defaultOptions } from "./types.js";
 import { formatNumber, formatBigInt } from "./number-formatter.js";
+import { ASTBasedPurityAnalyzer } from "./purity-analyzer.js";
 
 /**
  * Normalized check structure that works for both v3 and v4
@@ -1035,8 +1036,55 @@ builtinHandlers.set("effects", (schema, ctx) => {
   }
 });
 
+/**
+ * Lazy-initialized purity analyzer (to avoid loading Babel on every import)
+ */
+let purityAnalyzer: ASTBasedPurityAnalyzer | null = null;
+
+/**
+ * Serialize a function, with optional purity checking
+ * @param fn - The function to serialize
+ * @param ctx - Serialization context
+ * @param placeholder - Placeholder to use if function can't/shouldn't be serialized
+ * @returns Serialized function code or placeholder
+ */
+function serializeFunction(
+  fn: ((...args: any[]) => any) | undefined,
+  ctx: SerializerContext,
+  placeholder: string,
+): string {
+  // If no function or serializeFunctions is disabled, use placeholder
+  if (!fn || ctx.options.serializeFunctions === false) {
+    return placeholder;
+  }
+
+  // For 'auto' mode, check purity
+  if (ctx.options.serializeFunctions === "auto") {
+    // Lazy-initialize analyzer
+    if (!purityAnalyzer) {
+      purityAnalyzer = new ASTBasedPurityAnalyzer();
+    }
+
+    const analysis = purityAnalyzer.analyze(fn);
+
+    // Only serialize if pure
+    if (!analysis.isPure) {
+      return placeholder;
+    }
+  }
+
+  // Serialize the function (both 'auto' mode with pure function and true mode)
+  try {
+    return fn.toString();
+  } catch {
+    // Fallback to placeholder if toString() fails
+    return placeholder;
+  }
+}
+
 // Pipe (v4) / Pipeline (v3)
 // In v4, transform() creates a pipe with in=input, out=ZodTransform
+// In v4, preprocess() creates a pipe with in=ZodTransform, out=target schema
 builtinHandlers.set("pipe", (schema, ctx) => {
   const def = ctx.adapter.getDef(schema);
   const input = def?.in || def?.innerType;
@@ -1044,13 +1092,51 @@ builtinHandlers.set("pipe", (schema, ctx) => {
 
   if (!input) return "z.any()";
 
+  // Check if input is a transform (this indicates z.preprocess in v4)
+  const inputType = ctx.adapter.isZodSchema(input)
+    ? ctx.adapter.getType(input)
+    : undefined;
+
+  // If input is transform and there's an output, this is z.preprocess()
+  if (inputType === "transform" && output && ctx.adapter.isZodSchema(output)) {
+    const outputStr = ctx.serialize(output);
+
+    // Extract the actual preprocess function from the transform def
+    const transformDef = ctx.adapter.getDef(input);
+    const preprocessFn = transformDef?.transform as
+      | ((...args: any[]) => any)
+      | undefined;
+
+    // Serialize the function (with purity checking if enabled)
+    const fnStr = serializeFunction(
+      preprocessFn,
+      ctx,
+      "(x) => x /* preprocess placeholder */",
+    );
+
+    return `z.preprocess(${fnStr}, ${outputStr})`;
+  }
+
   const inputStr = ctx.serialize(input);
 
-  // Check if output is a transform
+  // Check if output is a transform (this is a regular .transform())
   if (output && ctx.adapter.isZodSchema(output)) {
     const outType = ctx.adapter.getType(output);
     if (outType === "transform") {
-      return `${inputStr}.transform((x) => x /* transform placeholder */)`;
+      // Extract the actual transform function
+      const transformDef = ctx.adapter.getDef(output);
+      const transformFn = transformDef?.transform as
+        | ((...args: any[]) => any)
+        | undefined;
+
+      // Serialize the function (with purity checking if enabled)
+      const fnStr = serializeFunction(
+        transformFn,
+        ctx,
+        "(x) => x /* transform placeholder */",
+      );
+
+      return `${inputStr}.transform(${fnStr})`;
     }
     // For other pipe outputs, chain with .pipe()
     return `${inputStr}.pipe(${ctx.serialize(output)})`;

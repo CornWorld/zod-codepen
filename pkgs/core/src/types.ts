@@ -16,6 +16,14 @@ export interface SerializeOptions {
     /** Use scientific notation for powers of 2 (default: true) */
     scientificNotation?: boolean;
   };
+
+  /**
+   * Function serialization mode
+   * - false: Use placeholders (default)
+   * - true: Always serialize function bodies
+   * - 'auto': Only serialize pure functions (detected via AST analysis)
+   */
+  serializeFunctions?: boolean | "auto";
 }
 
 /**
@@ -51,11 +59,20 @@ export type SchemaHandler = (
 ) => string | undefined;
 
 /**
+ * Resolved serialization options (with defaults applied)
+ */
+export type ResolvedSerializeOptions = Required<
+  Omit<SerializeOptions, "serializeFunctions">
+> & {
+  serializeFunctions: boolean | "auto";
+};
+
+/**
  * Context passed to handlers during serialization
  */
 export interface SerializerContext {
   adapter: ZodAdapter;
-  options: Required<SerializeOptions>;
+  options: ResolvedSerializeOptions;
   indent: (level?: number) => string;
   serialize: (schema: unknown, indentLevel?: number) => string;
 }
@@ -63,7 +80,7 @@ export interface SerializerContext {
 /**
  * Default serialization options
  */
-export const defaultOptions: Required<SerializeOptions> = {
+export const defaultOptions: ResolvedSerializeOptions = {
   indent: "  ",
   indentLevel: 0,
   format: true,
@@ -71,4 +88,5 @@ export const defaultOptions: Required<SerializeOptions> = {
     semanticMethods: true,
     scientificNotation: true,
   },
+  serializeFunctions: false,
 };

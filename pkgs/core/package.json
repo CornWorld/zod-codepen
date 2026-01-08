@@ -2,7 +2,13 @@
   "name": "@zod-codepen/core",
   "version": "1.0.1",
   "description": "Core serialization logic for zod-to-code",
-  "keywords": ["zod", "schema", "serialization", "code-generation", "typescript"],
+  "keywords": [
+    "zod",
+    "schema",
+    "serialization",
+    "code-generation",
+    "typescript"
+  ],
   "license": "MPL-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -18,7 +24,10 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@eslint/js": "^9.39.2",
+    "@types/babel__traverse": "^7.28.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.51.0"
   },
   "peerDependencies": {
     "zod": ">=3.0.0"
@@ -27,5 +36,10 @@
     "zod": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5"
   }
 }
