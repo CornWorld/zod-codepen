@@ -1058,6 +1058,31 @@ function serializeFunction(
     return placeholder;
   }
 
+  // For 'marked' mode, add structured metadata for impure functions
+  if (ctx.options.serializeFunctions === "marked") {
+    // Lazy-initialize analyzer
+    if (!purityAnalyzer) {
+      purityAnalyzer = new ASTBasedPurityAnalyzer();
+    }
+
+    const analysis = purityAnalyzer.analyze(fn);
+    const fnSource = trySerializeFunction(fn);
+
+    if (analysis.isPure) {
+      // Pure function: serialize directly
+      return fnSource;
+    }
+
+    // Impure function: add structured metadata comment
+    const metadata = {
+      source: fnSource,
+      vars: analysis.details.freeVariables,
+    };
+    const marker = `// @zod-codepen-impure ${JSON.stringify(metadata)}`;
+
+    return `${marker}\n${placeholder}`;
+  }
+
   // For 'auto' mode, check purity
   if (ctx.options.serializeFunctions === "auto") {
     // Lazy-initialize analyzer
@@ -1074,11 +1099,15 @@ function serializeFunction(
   }
 
   // Serialize the function (both 'auto' mode with pure function and true mode)
+  return trySerializeFunction(fn);
+}
+
+function trySerializeFunction(fn: (...args: any[]) => any): string {
   try {
     return fn.toString();
   } catch {
-    // Fallback to placeholder if toString() fails
-    return placeholder;
+    // Return placeholder if toString() fails
+    return "/* function */";
   }
 }
 
@@ -1102,6 +1131,8 @@ builtinHandlers.set("pipe", (schema, ctx) => {
     const outputStr = ctx.serialize(output);
 
     // Extract the actual preprocess function from the transform def
+    // In v4, preprocess creates: pipe(transform(fn), targetSchema)
+    // The transform function is stored in transformDef.transform
     const transformDef = ctx.adapter.getDef(input);
     const preprocessFn = transformDef?.transform as
       | ((...args: any[]) => any)
@@ -1124,6 +1155,8 @@ builtinHandlers.set("pipe", (schema, ctx) => {
     const outType = ctx.adapter.getType(output);
     if (outType === "transform") {
       // Extract the actual transform function
+      // In v4, .transform() creates: pipe(inputSchema, transform(fn))
+      // The transform function is stored in transformDef.transform
       const transformDef = ctx.adapter.getDef(output);
       const transformFn = transformDef?.transform as
         | ((...args: any[]) => any)

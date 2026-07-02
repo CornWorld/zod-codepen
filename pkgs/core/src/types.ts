@@ -22,8 +22,9 @@ export interface SerializeOptions {
    * - false: Use placeholders (default)
    * - true: Always serialize function bodies
    * - 'auto': Only serialize pure functions (detected via AST analysis)
+   * - 'marked': Serialize functions with structured metadata comments for impure ones
    */
-  serializeFunctions?: boolean | "auto";
+  serializeFunctions?: boolean | "auto" | "marked";
 }
 
 /**
@@ -64,7 +65,7 @@ export type SchemaHandler = (
 export type ResolvedSerializeOptions = Required<
   Omit<SerializeOptions, "serializeFunctions">
 > & {
-  serializeFunctions: boolean | "auto";
+  serializeFunctions: boolean | "auto" | "marked";
 };
 
 /**
