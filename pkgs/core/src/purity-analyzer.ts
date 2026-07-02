@@ -216,11 +216,13 @@ class ASTBasedPurityAnalyzer {
 
         // 跳过：
         // 1. 声明位置的标识符（如 const x = 1 中的 x）
-        // 2. 属性名（如 obj.prop 中的 prop）
-        // 3. 类型注解
+        // 2. 属性名（如 obj.prop 中的 prop，或 { key: value } 中的 key）
+        // 3. 解构键名（如 { user: { name } } 中的 user）
+        // 4. 类型注解
         if (
           path.isBindingIdentifier() ||
           this.isPropertyName(path) ||
+          this.isDestructuringKey(path) ||
           this.isTypeAnnotation(path)
         ) {
           return;
@@ -241,11 +243,22 @@ class ASTBasedPurityAnalyzer {
 
     traverse(ast, {
       // 检测赋值操作（可能的副作用）
+      // Note: We only flag member expression assignments as potential side effects
+      // Local object mutations (const obj = {}; obj.a = 1) are acceptable in transforms
+      // but we can't easily distinguish them without full data flow analysis
       AssignmentExpression: (_path: any) => {
         const left = _path.node.left;
         if (t.isMemberExpression(left)) {
-          // obj.prop = value 可能是副作用
-          effectSet.add("Property assignment (potential mutation)");
+          // Check if the object being mutated is an external reference
+          // For now, we're permissive - only flag if it's clearly an external object
+          const obj = left.object;
+          if (t.isIdentifier(obj)) {
+            const objName = obj.name;
+            // Only flag if assigning to known side-effect globals
+            if (this.sideEffectPatterns.includes(objName)) {
+              effectSet.add(`Mutates ${objName} (side effect)`);
+            }
+          }
         }
       },
 
@@ -268,10 +281,9 @@ class ASTBasedPurityAnalyzer {
       NewExpression: (path: any) => {
         if (t.isIdentifier(path.node.callee)) {
           const name = path.node.callee.name;
-          // 某些构造函数可能有副作用
-          if (
-            ["Date", "Promise", "XMLHttpRequest", "WebSocket"].includes(name)
-          ) {
+          // Only flag constructors with obvious side effects
+          // Date is commonly used in pure transforms for formatting
+          if (["Promise", "XMLHttpRequest", "WebSocket"].includes(name)) {
             effectSet.add(`Creates ${name} instance`);
           }
         }
@@ -340,10 +352,11 @@ class ASTBasedPurityAnalyzer {
       bindings.add(node.name);
     } else if (t.isObjectPattern(node)) {
       node.properties.forEach((prop) => {
-        if (t.isObjectProperty(prop) && t.isIdentifier(prop.value)) {
-          bindings.add(prop.value.name);
-        } else if (t.isRestElement(prop) && t.isIdentifier(prop.argument)) {
-          bindings.add(prop.argument.name);
+        if (t.isObjectProperty(prop)) {
+          // Recursively handle nested patterns like { a: { b } }
+          this.collectBindings(prop.value as t.LVal, bindings);
+        } else if (t.isRestElement(prop)) {
+          this.collectBindings(prop.argument, bindings);
         }
       });
     } else if (t.isArrayPattern(node)) {
@@ -371,11 +384,41 @@ class ASTBasedPurityAnalyzer {
 
   private isPropertyName(path: NodePath<t.Identifier>): boolean {
     const parent = path.parent;
-    return (
+    // Check if this identifier is a property key in MemberExpression (obj.prop)
+    if (
       t.isMemberExpression(parent) &&
       parent.property === path.node &&
       !parent.computed
-    );
+    ) {
+      return true;
+    }
+    // Check if this identifier is a property key in ObjectExpression ({ key: value })
+    if (
+      t.isObjectProperty(parent) &&
+      parent.key === path.node &&
+      !parent.computed
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private isDestructuringKey(path: NodePath<t.Identifier>): boolean {
+    const parent = path.parent;
+    // In destructuring like { user: { name } }, "user" is a key, not a binding
+    // The binding is in the value position
+    if (
+      t.isObjectProperty(parent) &&
+      parent.key === path.node &&
+      !parent.computed
+    ) {
+      // Check if we're inside a destructuring pattern (ObjectPattern)
+      const grandparent = path.parentPath?.parent;
+      if (t.isObjectPattern(grandparent)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private isTypeAnnotation(path: NodePath<t.Identifier>): boolean {
