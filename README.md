@@ -211,12 +211,12 @@ zod-codepen/
 
 ## Documentation
 
-Visit the [documentation site](https://zod-codepen.dev) for detailed guides and API reference.
+Visit the [documentation site](https://zod-codepen.corn.im) for detailed guides and API reference.
 
-- [Getting Started](https://zod-codepen.dev/guide/getting-started)
-- [API Reference](https://zod-codepen.dev/api/)
-- [v3/v4 Migration Guide](https://zod-codepen.dev/guide/migration)
-- [Custom Handlers](https://zod-codepen.dev/guide/custom-handlers)
+- [Getting Started](https://zod-codepen.corn.im/guide/getting-started)
+- [API Reference](https://zod-codepen.corn.im/api/)
+- [v3/v4 Migration Guide](https://zod-codepen.corn.im/guide/migration)
+- [Custom Handlers](https://zod-codepen.corn.im/guide/custom-handlers)
 
 ## Development
 
