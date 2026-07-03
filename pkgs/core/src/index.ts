@@ -59,3 +59,17 @@ export { castFromZod } from "./cast/runtime.js";
 export type { CastContext } from "./cast/runtime.js";
 export { codegen } from "./ir/printer/codegen.js";
 export type { CodegenOptions } from "./ir/printer/codegen.js";
+
+// Static AST extraction (no runtime import of user code)
+export {
+  castFromAst,
+  castAllFromAst,
+  castFromExpressionExported,
+} from "./cast/ast.js";
+export type { AstCastOptions, AstResolver } from "./cast/ast.js";
+export { extractSchemaExports } from "./extract/module.js";
+export type { ExtractedExport } from "./extract/module.js";
+export { ModuleResolver, makeAstResolver } from "./extract/resolver.js";
+export type { ModuleResolverOptions } from "./extract/resolver.js";
+export { tryInlineWrapper } from "./extract/inline.js";
+export type { InlineOptions, InlineResult } from "./extract/inline.js";
