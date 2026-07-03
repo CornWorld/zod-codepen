@@ -167,10 +167,22 @@ function renderSingleConstraint(
 
 function renderMinFallback(c: ConstraintNode): string {
   const v = c.params.value ?? c.params.minimum;
+  // No value (e.g. AST cast of bare .positive()) — fall back to semantic
+  // method. This mirrors how Zod's own API surfaces these constraints.
+  if (v === undefined) {
+    if (c.name === "positive") return ".positive()";
+    if (c.name === "nonnegative") return ".nonnegative()";
+    return ".min()";
+  }
   return `.min(${renderNumeric(v)})`;
 }
 function renderMaxFallback(c: ConstraintNode): string {
   const v = c.params.value ?? c.params.maximum;
+  if (v === undefined) {
+    if (c.name === "negative") return ".negative()";
+    if (c.name === "nonpositive") return ".nonpositive()";
+    return ".max()";
+  }
   return `.max(${renderNumeric(v)})`;
 }
 
