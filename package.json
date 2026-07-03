@@ -9,6 +9,7 @@
     "test": "pnpm -r test",
     "test:v3": "pnpm --filter @zod-codepen/zod-v3 test",
     "test:v4": "pnpm --filter @zod-codepen/zod-v4 test",
+    "test:core": "pnpm --filter @zod-codepen/core test",
     "test:vite-plugin": "pnpm --filter @zod-codepen/vite-plugin test",
     "test:coverage": "pnpm -r --filter './pkgs/*' exec vitest run --coverage",
     "lint": "eslint .",
@@ -20,6 +21,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.16.0",
@@ -27,6 +29,7 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^2.1.9"
   },
   "engines": {
