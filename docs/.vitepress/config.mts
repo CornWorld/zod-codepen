@@ -82,6 +82,7 @@ export default defineConfig({
           text: '进阶',
           items: [
             { text: 'Vite Plugin', link: '/guide/vite-plugin' },
+            { text: '静态提取', link: '/guide/static-extraction' },
             { text: '自定义处理器', link: '/guide/custom-handlers' },
             { text: '支持的类型', link: '/guide/supported-types' },
             { text: '在线 Playground', link: '/playground' },
@@ -94,6 +95,7 @@ export default defineConfig({
           items: [
             { text: 'serialize()', link: '/api/serialize' },
             { text: 'generateModule()', link: '/api/generate-module' },
+            { text: 'castFromAst()', link: '/api/cast-from-ast' },
             { text: 'registerHandler()', link: '/api/register-handler' },
             { text: 'createSerializer()', link: '/api/create-serializer' },
             { text: 'Vite Plugin', link: '/api/vite-plugin' },
