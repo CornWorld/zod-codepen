@@ -26,10 +26,20 @@
  * ```
  */
 
-import { createSerializer, type ZodAdapter, type SerializeOptions } from '@zod-codepen/core';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import type { Plugin } from 'vite';
+import {
+  createSerializer,
+  type ZodAdapter,
+  type SerializeOptions,
+  castAllFromAst,
+  ModuleResolver,
+  makeAstResolver,
+  codegen,
+  type CodegenOptions,
+  type IRNode,
+} from "@zod-codepen/core";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { Plugin } from "vite";
 
 // ============================================================
 // Types
@@ -70,7 +80,7 @@ export interface GenerateSchemaOptions {
    * Zod version to use
    * @default 'v4'
    */
-  zodVersion?: 'v3' | 'v4';
+  zodVersion?: "v3" | "v4";
 
   /**
    * Filter function to select which exports to serialize
@@ -110,68 +120,69 @@ export interface GenerateSchemaOptions {
  */
 export function createZodV4Adapter(): ZodAdapter {
   return {
-    version: 'v4',
+    version: "v4",
     getType(schema: unknown): string | undefined {
-      if (!schema || typeof schema !== 'object') return undefined;
+      if (!schema || typeof schema !== "object") return undefined;
 
       const s = schema as Record<string, unknown>;
 
       // Zod v4: schema._zod.def.type
-      if (s._zod && typeof s._zod === 'object') {
+      if (s._zod && typeof s._zod === "object") {
         const zod = s._zod as Record<string, unknown>;
-        if (zod.def && typeof zod.def === 'object') {
+        if (zod.def && typeof zod.def === "object") {
           const def = zod.def as Record<string, unknown>;
-          if (typeof def.type === 'string') return def.type;
+          if (typeof def.type === "string") return def.type;
         }
       }
 
       // Direct type property (v4 mini)
-      if (typeof s.type === 'string') return s.type;
+      if (typeof s.type === "string") return s.type;
 
       // Fallback to v3 structure
-      if (s._def && typeof s._def === 'object') {
+      if (s._def && typeof s._def === "object") {
         const def = s._def as Record<string, unknown>;
-        if (typeof def.typeName === 'string') {
-          return def.typeName.replace(/^Zod/, '').toLowerCase();
+        if (typeof def.typeName === "string") {
+          return def.typeName.replace(/^Zod/, "").toLowerCase();
         }
       }
 
       return undefined;
     },
     getDef(schema: unknown): Record<string, unknown> | undefined {
-      if (!schema || typeof schema !== 'object') return undefined;
+      if (!schema || typeof schema !== "object") return undefined;
 
       const s = schema as Record<string, unknown>;
 
-      if (s._zod && typeof s._zod === 'object') {
+      if (s._zod && typeof s._zod === "object") {
         const zod = s._zod as Record<string, unknown>;
-        if (zod.def && typeof zod.def === 'object') {
+        if (zod.def && typeof zod.def === "object") {
           return zod.def as Record<string, unknown>;
         }
       }
 
-      if (s._def && typeof s._def === 'object') {
+      if (s._def && typeof s._def === "object") {
         return s._def as Record<string, unknown>;
       }
 
       return undefined;
     },
     isZodSchema(value: unknown): boolean {
-      if (!value || typeof value !== 'object') return false;
+      if (!value || typeof value !== "object") return false;
 
       const v = value as Record<string, unknown>;
 
       // v4: has _zod property
-      if (v._zod && typeof v._zod === 'object') return true;
+      if (v._zod && typeof v._zod === "object") return true;
 
       // v3: has _def with typeName
-      if (v._def && typeof v._def === 'object') {
+      if (v._def && typeof v._def === "object") {
         const def = v._def as Record<string, unknown>;
-        return typeof def.typeName === 'string';
+        return typeof def.typeName === "string";
       }
 
       // v4 mini: has direct type property and parse function
-      if (typeof v.type === 'string' && typeof v.parse === 'function') return true;
+      if (typeof v.type === "string" && typeof v.parse === "function")
+        return true;
 
       return false;
     },
@@ -183,40 +194,40 @@ export function createZodV4Adapter(): ZodAdapter {
  */
 export function createZodV3Adapter(): ZodAdapter {
   return {
-    version: 'v3',
+    version: "v3",
     getType(schema: unknown): string | undefined {
-      if (!schema || typeof schema !== 'object') return undefined;
+      if (!schema || typeof schema !== "object") return undefined;
 
       const s = schema as Record<string, unknown>;
 
-      if (s._def && typeof s._def === 'object') {
+      if (s._def && typeof s._def === "object") {
         const def = s._def as Record<string, unknown>;
-        if (typeof def.typeName === 'string') {
-          return def.typeName.replace(/^Zod/, '').toLowerCase();
+        if (typeof def.typeName === "string") {
+          return def.typeName.replace(/^Zod/, "").toLowerCase();
         }
       }
 
       return undefined;
     },
     getDef(schema: unknown): Record<string, unknown> | undefined {
-      if (!schema || typeof schema !== 'object') return undefined;
+      if (!schema || typeof schema !== "object") return undefined;
 
       const s = schema as Record<string, unknown>;
 
-      if (s._def && typeof s._def === 'object') {
+      if (s._def && typeof s._def === "object") {
         return s._def as Record<string, unknown>;
       }
 
       return undefined;
     },
     isZodSchema(value: unknown): boolean {
-      if (!value || typeof value !== 'object') return false;
+      if (!value || typeof value !== "object") return false;
 
       const v = value as Record<string, unknown>;
 
-      if (v._def && typeof v._def === 'object') {
+      if (v._def && typeof v._def === "object") {
         const def = v._def as Record<string, unknown>;
-        return typeof def.typeName === 'string';
+        return typeof def.typeName === "string";
       }
 
       return false;
@@ -233,9 +244,9 @@ export function createZodV3Adapter(): ZodAdapter {
  */
 export const defaultFilter = (name: string): boolean => {
   // Skip type-only exports
-  if (name.endsWith('Type')) return false;
+  if (name.endsWith("Type")) return false;
   // Include API schemas (no $ prefix)
-  return !name.startsWith('$');
+  return !name.startsWith("$");
 };
 
 /**
@@ -252,11 +263,13 @@ export const defaultFilter = (name: string): boolean => {
  * });
  * ```
  */
-export async function generateSchemas(options: GenerateSchemaOptions): Promise<void> {
+export async function generateSchemas(
+  options: GenerateSchemaOptions,
+): Promise<void> {
   const {
     schemas,
     outputPath,
-    zodVersion = 'v4',
+    zodVersion = "v4",
     filter = defaultFilter,
     includeTypes = true,
     header,
@@ -269,13 +282,14 @@ export async function generateSchemas(options: GenerateSchemaOptions): Promise<v
   };
 
   // Get adapter
-  const adapter = zodVersion === 'v3' ? createZodV3Adapter() : createZodV4Adapter();
+  const adapter =
+    zodVersion === "v3" ? createZodV3Adapter() : createZodV4Adapter();
   const serializer = createSerializer(adapter);
 
   // Filter schemas
   const selectedSchemas: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(schemas)) {
-    if (typeof value === 'undefined') continue;
+    if (typeof value === "undefined") continue;
 
     if (adapter.isZodSchema(value)) {
       if (filter(name, value)) {
@@ -295,18 +309,20 @@ export async function generateSchemas(options: GenerateSchemaOptions): Promise<v
   // Header
   if (header) {
     lines.push(header);
-    lines.push('');
+    lines.push("");
   } else {
-    lines.push('/**');
-    lines.push(' * AUTO-GENERATED FILE - DO NOT EDIT');
-    lines.push(' *');
-    lines.push(` * Generated by @zod-codepen/vite-plugin at ${new Date().toISOString()}`);
-    lines.push(' */');
-    lines.push('');
+    lines.push("/**");
+    lines.push(" * AUTO-GENERATED FILE - DO NOT EDIT");
+    lines.push(" *");
+    lines.push(
+      ` * Generated by @zod-codepen/vite-plugin at ${new Date().toISOString()}`,
+    );
+    lines.push(" */");
+    lines.push("");
   }
 
   lines.push("import { z } from 'zod';");
-  lines.push('');
+  lines.push("");
 
   // Serialize schemas
   const typeExports: string[] = [];
@@ -314,7 +330,7 @@ export async function generateSchemas(options: GenerateSchemaOptions): Promise<v
     try {
       const serialized = serializer.serialize(schema, serializeOptions);
       lines.push(`export const ${name} = ${serialized};`);
-      lines.push('');
+      lines.push("");
 
       if (includeTypes) {
         typeExports.push(`export type ${name} = z.infer<typeof ${name}>;`);
@@ -322,13 +338,13 @@ export async function generateSchemas(options: GenerateSchemaOptions): Promise<v
     } catch (error) {
       console.warn(`[zod-decoupling] Failed to serialize '${name}':`, error);
       lines.push(`export const ${name} = z.any(); // Serialization failed`);
-      lines.push('');
+      lines.push("");
     }
   }
 
   // Type exports
   if (includeTypes && typeExports.length > 0) {
-    lines.push('// Type exports');
+    lines.push("// Type exports");
     lines.push(...typeExports);
   }
 
@@ -338,7 +354,7 @@ export async function generateSchemas(options: GenerateSchemaOptions): Promise<v
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  fs.writeFileSync(outputPath, lines.join('\n'));
+  fs.writeFileSync(outputPath, lines.join("\n"));
   log(`Generated: ${outputPath}`);
 }
 
@@ -368,8 +384,8 @@ export function zodDecouplingAlias(options: ZodDecouplingAliasOptions): Plugin {
   const { aliasFrom, aliasTo } = options;
 
   return {
-    name: 'zod-decoupling-alias',
-    enforce: 'pre',
+    name: "zod-decoupling-alias",
+    enforce: "pre",
 
     config(userConfig) {
       const root = userConfig.root || process.cwd();
@@ -396,7 +412,7 @@ export function zodDecoupling(options: {
   schemaEntry: string;
   outputPath: string;
   aliasFrom: string;
-  zodVersion?: 'v3' | 'v4';
+  zodVersion?: "v3" | "v4";
   filter?: (name: string, schema: unknown) => boolean;
   includeTypes?: boolean;
   header?: string;
@@ -407,7 +423,7 @@ export function zodDecoupling(options: {
     schemaEntry,
     outputPath,
     aliasFrom,
-    zodVersion = 'v4',
+    zodVersion = "v4",
     filter = defaultFilter,
     includeTypes = true,
     header,
@@ -418,8 +434,8 @@ export function zodDecoupling(options: {
   let root: string;
 
   return {
-    name: 'zod-decoupling',
-    enforce: 'pre',
+    name: "zod-decoupling",
+    enforce: "pre",
 
     configResolved(config) {
       root = config.root;
@@ -463,7 +479,241 @@ export function zodDecoupling(options: {
   };
 }
 
+// ============================================================
+// Static extraction (no runtime import)
+// ============================================================
+
+export interface GenerateFromSourceOptions {
+  /** Source code of the schema entry file. */
+  source: string;
+  /** Absolute path to the entry file (used for cross-file resolution + error messages). */
+  fileName: string;
+  /** Root directory for cross-file resolution. Defaults to dirname(fileName). */
+  rootDir?: string;
+  /** Output file path. */
+  outputPath: string;
+  /** Zod version for the generated `import` statement header. */
+  zodVersion?: "v3" | "v4";
+  /** Filter which extracted exports make it into the output. */
+  filter?: (name: string, ir: IRNode) => boolean;
+  /** Emit `export type X = z.infer<typeof X>;` per export. @default true */
+  includeTypes?: boolean;
+  /** Custom header (defaults to AUTO-GENERATED banner). */
+  header?: string;
+  /** Codegen options (indent, format, optimizations). */
+  codegenOptions?: CodegenOptions;
+  /** Verbose logging. @default false */
+  verbose?: boolean;
+}
+
+/**
+ * Default source-extraction filter: drop internal ($) and type-suffixed names,
+ * plus any node that ended up as RawNode/FallbackNode (can't be safely emitted).
+ */
+export const defaultSourceFilter = (_name: string, ir: IRNode): boolean => {
+  if (ir.kind === "raw" || ir.kind === "fallback") return false;
+  return true;
+};
+
+/**
+ * Generate a pure-Zod schema file by statically parsing TypeScript source.
+ *
+ * Unlike {@link generateSchemas}, this does NOT execute the user code — it
+ * reads the source as text and runs the AST caster. Cross-file imports of
+ * relative specifiers (./x, ../y) are resolved recursively; bare specifiers
+ * ('zod', 'drizzle-zod', etc.) become RawNode placeholders.
+ */
+export async function generateSchemasFromSource(
+  options: GenerateFromSourceOptions,
+): Promise<void> {
+  const {
+    source,
+    fileName,
+    rootDir,
+    outputPath,
+    zodVersion = "v4",
+    filter = defaultSourceFilter,
+    includeTypes = true,
+    header,
+    codegenOptions,
+    verbose = false,
+  } = options;
+
+  const log = (msg: string) => {
+    if (verbose) console.log(`[zod-decoupling-static] ${msg}`);
+  };
+
+  const resolvedRoot = rootDir ?? path.dirname(path.resolve(fileName));
+  const resolver = new ModuleResolver(resolvedRoot);
+  const astResolver = makeAstResolver(resolver);
+
+  const results = castAllFromAst(source, {
+    fileName: path.resolve(fileName),
+    resolver: astResolver,
+  });
+
+  const cgOpts: CodegenOptions = codegenOptions ?? {
+    indent: "  ",
+    indentLevel: 0,
+    format: true,
+    optimizations: { semanticMethods: true, scientificNotation: true },
+  };
+
+  const lines: string[] = [];
+  if (header) {
+    lines.push(header);
+    lines.push("");
+  } else {
+    lines.push("/**");
+    lines.push(" * AUTO-GENERATED FILE - DO NOT EDIT");
+    lines.push(" *");
+    lines.push(
+      ` * Generated by @zod-codepen/vite-plugin (static) at ${new Date().toISOString()}`,
+    );
+    lines.push(" */");
+    lines.push("");
+  }
+
+  // Zod v4 ships under the 'zod/v4' subpath until ecosystem migration
+  // completes; v3 stays at the bare 'zod' specifier.
+  const zodImport = zodVersion === "v3" ? "'zod'" : "'zod/v4'";
+  lines.push(`import { z } from ${zodImport};`);
+  lines.push("");
+
+  const typeExports: string[] = [];
+  let emitted = 0;
+  let skipped = 0;
+
+  for (const { name, ir } of results) {
+    if (name.startsWith("$") || name.endsWith("Type")) {
+      skipped++;
+      continue;
+    }
+    if (!filter(name, ir)) {
+      skipped++;
+      log(`Skipping (filtered): ${name} [${ir.kind}]`);
+      continue;
+    }
+    const code = codegen(ir, cgOpts).trim();
+    if (ir.kind === "raw" || ir.kind === "fallback") {
+      lines.push(
+        `/* ${ir.kind}: ${("reason" in ir && ir.reason) || "unresolved"} */`,
+      );
+    }
+    lines.push(`export const ${name} = ${code};`);
+    lines.push("");
+    if (includeTypes) {
+      typeExports.push(`export type ${name} = z.infer<typeof ${name}>;`);
+    }
+    emitted++;
+    log(`Emitted: ${name} [${ir.kind}]`);
+  }
+
+  if (includeTypes && typeExports.length > 0) {
+    lines.push("// Type exports");
+    lines.push(...typeExports);
+    lines.push("");
+  }
+
+  log(`Emitted ${emitted} schema(s), skipped ${skipped}`);
+
+  // Write
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  fs.writeFileSync(outputPath, lines.join("\n"));
+  log(`Generated: ${outputPath}`);
+}
+
+/**
+ * Vite plugin that statically extracts Zod schemas from TypeScript source.
+ *
+ * Unlike {@link zodDecoupling}, this plugin reads the schema entry as TEXT
+ * (not via `await import()`), so it works even when the schema depends on
+ * drizzle-orm, pg drivers, or other heavy runtime modules.
+ */
+export function zodDecouplingStatic(options: {
+  schemaEntry: string;
+  outputPath: string;
+  aliasFrom: string;
+  zodVersion?: "v3" | "v4";
+  filter?: (name: string, ir: IRNode) => boolean;
+  includeTypes?: boolean;
+  header?: string;
+  codegenOptions?: CodegenOptions;
+  verbose?: boolean;
+}): Plugin {
+  const {
+    schemaEntry,
+    outputPath,
+    aliasFrom,
+    zodVersion = "v4",
+    filter = defaultSourceFilter,
+    includeTypes = true,
+    header,
+    codegenOptions,
+    verbose = false,
+  } = options;
+
+  let root: string;
+
+  return {
+    name: "zod-decoupling-static",
+    enforce: "pre",
+
+    configResolved(config) {
+      root = config.root;
+    },
+
+    async buildStart() {
+      const entryPath = path.resolve(root, schemaEntry);
+      const outputFilePath = path.resolve(root, outputPath);
+
+      try {
+        const source = fs.readFileSync(entryPath, "utf-8");
+        await generateSchemasFromSource({
+          source,
+          fileName: entryPath,
+          rootDir: root,
+          outputPath: outputFilePath,
+          zodVersion,
+          filter,
+          includeTypes,
+          header,
+          codegenOptions,
+          verbose,
+        });
+      } catch (error) {
+        console.error(
+          "[zod-decoupling-static] Failed to generate schemas:",
+          error,
+        );
+        throw error;
+      }
+    },
+
+    config(userConfig) {
+      const resolvedRoot = userConfig.root || process.cwd();
+      const aliasToResolved = path.resolve(resolvedRoot, outputPath);
+
+      return {
+        resolve: {
+          alias: {
+            [aliasFrom]: aliasToResolved,
+          },
+        },
+      };
+    },
+  };
+}
+
 export default zodDecoupling;
 
 // Re-export types
-export type { ZodAdapter, SerializeOptions } from '@zod-codepen/core';
+export type {
+  ZodAdapter,
+  SerializeOptions,
+  IRNode,
+  CodegenOptions,
+} from "@zod-codepen/core";
