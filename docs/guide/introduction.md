@@ -22,10 +22,10 @@
 
 ```typescript
 // Zod v3
-import { serialize } from '@zod-codepen/zod-v3';
+import { serialize } from "@zod-codepen/zod-v3";
 
 // Zod v4 (包括所有变体)
-import { serialize } from '@zod-codepen/zod-v4';
+import { serialize } from "@zod-codepen/zod-v4";
 ```
 
 ### 📦 全面的类型覆盖
@@ -45,10 +45,10 @@ import { serialize } from '@zod-codepen/zod-v4';
 
 ```typescript
 // 输入
-z.number().min(0).max(100)
+z.number().min(0).max(100);
 
 // 输出 - 使用语义化方法
-'z.number().nonnegative().max(100)'
+("z.number().nonnegative().max(100)");
 ```
 
 ### 📝 灵活的格式化
@@ -70,26 +70,36 @@ serialize(schema, { format: false });
 
 ## 架构设计
 
+zod-codepen 采用 **IR（中间表示）架构**，序列化过程分为两个阶段：
+
 ```
-┌─────────────────────────────────────────────────────┐
-│                   @zod-codepen/core                  │
-│  ┌───────────────┐  ┌───────────────────────────┐  │
-│  │  Serializer   │  │    Built-in Handlers      │  │
-│  │               │  │  string, number, object   │  │
-│  │  normalize    │  │  array, union, ...        │  │
-│  │  format       │  │                           │  │
-│  └───────────────┘  └───────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-         ▲                        ▲
-         │                        │
-┌────────┴────────┐    ┌─────────┴─────────┐
-│ @zod-codepen/   │    │  @zod-codepen/    │
-│    zod-v3       │    │     zod-v4        │
-│                 │    │                   │
-│  v3 Adapter     │    │   v4 Adapter      │
-│  getType()      │    │   getType()       │
-│  getDef()       │    │   getDef()        │
-└─────────────────┘    └───────────────────┘
+Zod Schema → cast (caster) → IRNode → codegen → Code String
+```
+
+**两条 cast 路径**：
+
+- `castFromZod()` — 运行时，需要实际 Zod 对象（支持 v3/v4）
+- `castFromAst()` — 静态 AST 解析，从 TypeScript 源码提取不执行用户代码
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    @zod-codepen/core                      │
+│                                                          │
+│   castFromZod()    ─┐                 ┌─  codegen()      │
+│   (runtime)          ├──►  IRNode  ──►│   (IR → 代码)    │
+│   castFromAst()    ─┘                 └─                 │
+│   (static AST)                                           │
+└──────────────────────────────────────────────────────────┘
+         ▲                                   ▲
+         │                                   │
+┌────────┴────────┐              ┌───────────┴───────────┐
+│ @zod-codepen/   │              │  @zod-codepen/        │
+│  zod-v3 / v4    │              │  vite-plugin          │
+│                 │              │                       │
+│  v3/v4 Adapter  │              │  zodDecoupling        │
+│  getType()      │              │  zodDecouplingStatic  │
+│  getDef()       │              │                       │
+└─────────────────┘              └───────────────────────┘
 ```
 
 ## 下一步

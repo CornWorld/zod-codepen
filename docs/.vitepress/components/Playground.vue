@@ -1,26 +1,37 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, shallowRef, watch } from 'vue'
-import { createHighlighter, type Highlighter } from 'shiki'
+import { ref, computed, onMounted, shallowRef, watch } from "vue";
+import { createHighlighter, type Highlighter } from "shiki";
 
 type SerializerModule = {
-  serialize: (schema: unknown, options?: { format?: boolean; indent?: string }) => string
-  generateModule: (schemas: Record<string, unknown>, options?: { format?: boolean; indent?: string }) => string
-}
+  serialize: (
+    schema: unknown,
+    options?: { format?: boolean; indent?: string }
+  ) => string;
+  generateModule: (
+    schemas: Record<string, unknown>,
+    options?: { format?: boolean; indent?: string }
+  ) => string;
+};
 
-const v3Serializer = shallowRef<SerializerModule | null>(null)
-const v4Serializer = shallowRef<SerializerModule | null>(null)
-const zodInstance = shallowRef<typeof import('zod').z | null>(null)
-const highlighter = shallowRef<Highlighter | null>(null)
+const v3Serializer = shallowRef<SerializerModule | null>(null);
+const v4Serializer = shallowRef<SerializerModule | null>(null);
+const zodInstance = shallowRef<typeof import("zod").z | null>(null);
+const highlighter = shallowRef<Highlighter | null>(null);
 
-const loading = ref(true)
-const error = ref<string | null>(null)
+const loading = ref(true);
+const error = ref<string | null>(null);
 
-const availableVersions = ref<string[]>([])
-const selectedVersion = ref('')
-const outputMode = ref<'serialize' | 'generateModule'>('serialize')
-const schemaName = ref('UserSchema')
-const formatOutput = ref(true)
-const indentSize = ref(2)
+const availableVersions = ref<string[]>([]);
+const selectedVersion = ref("");
+const versionInput = ref(selectedVersion.value);
+let versionDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let versionRequestId = 0;
+const copied = ref(false);
+const zodLoading = ref(false);
+const outputMode = ref<"serialize" | "generateModule">("serialize");
+const schemaName = ref("UserSchema");
+const formatOutput = ref(true);
+const indentSize = ref(2);
 
 const inputCode = ref(`z.object({
   id: z.string().uuid(),
@@ -29,153 +40,174 @@ const inputCode = ref(`z.object({
   age: z.number().int().min(0).optional(),
   role: z.enum(['admin', 'user', 'guest']),
   tags: z.array(z.string()).default([]),
-})`)
+})`);
 
 // Refs for syncing scroll between textarea and highlight layer
-const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const highlightRef = ref<HTMLDivElement | null>(null)
-const isComposing = ref(false)  // 跟踪输入法状态
+const textareaRef = ref<HTMLTextAreaElement | null>(null);
+const highlightRef = ref<HTMLDivElement | null>(null);
+const isComposing = ref(false); // 跟踪输入法状态
 
 // Sync scroll positions
 const syncScroll = (event: Event) => {
-  const textarea = event.target as HTMLTextAreaElement
+  const textarea = event.target as HTMLTextAreaElement;
   if (highlightRef.value) {
-    highlightRef.value.scrollTop = textarea.scrollTop
-    highlightRef.value.scrollLeft = textarea.scrollLeft
+    highlightRef.value.scrollTop = textarea.scrollTop;
+    highlightRef.value.scrollLeft = textarea.scrollLeft;
   }
-}
+};
 
 // 处理输入法事件
 const handleCompositionStart = () => {
-  isComposing.value = true
-}
+  isComposing.value = true;
+};
 
 const handleCompositionEnd = () => {
-  isComposing.value = false
-}
+  isComposing.value = false;
+};
 
 onMounted(async () => {
   try {
     // Load serializers and highlighter
-    const isDev = import.meta.env.DEV
+    const isDev = import.meta.env.DEV;
 
     const [v3, v4, hl] = await Promise.all([
       // Use workspace link in dev, CDN in production
       isDev
-        ? import('@zod-codepen/zod-v3')
-        : import('https://esm.sh/@zod-codepen/zod-v3@latest'),
+        ? import("@zod-codepen/zod-v3")
+        : import("https://esm.sh/@zod-codepen/zod-v3@latest"),
       isDev
-        ? import('@zod-codepen/zod-v4')
-        : import('https://esm.sh/@zod-codepen/zod-v4@latest'),
+        ? import("@zod-codepen/zod-v4")
+        : import("https://esm.sh/@zod-codepen/zod-v4@latest"),
       createHighlighter({
-        themes: ['github-light', 'github-dark'],
-        langs: ['typescript']
-      })
-    ])
+        themes: ["github-light", "github-dark"],
+        langs: ["typescript"],
+      }),
+    ]);
 
-    v3Serializer.value = v3 as SerializerModule
-    v4Serializer.value = v4 as SerializerModule
-    highlighter.value = hl
+    v3Serializer.value = v3 as SerializerModule;
+    v4Serializer.value = v4 as SerializerModule;
+    highlighter.value = hl;
 
     // Default to v4
-    selectedVersion.value = '4'
+    selectedVersion.value = "4";
   } catch (e) {
-    error.value = `Failed to load: ${e instanceof Error ? e.message : String(e)}`
-    loading.value = false
+    error.value = `Failed to load: ${
+      e instanceof Error ? e.message : String(e)
+    }`;
+    loading.value = false;
   }
-})
+});
 
 watch(selectedVersion, async (ver) => {
-  if (!ver) return
-  
-  loading.value = true
-  error.value = null
-  
+  if (!ver) return;
+
+  zodLoading.value = true;
+  error.value = null;
+
+  const requestId = ++versionRequestId;
+
   try {
-    // Add ?dev for better error messages
-    const mod = await import(/* @vite-ignore */ `https://esm.sh/zod@${ver}?dev`)
-    zodInstance.value = mod.z
+    const mod = await import(
+      /* @vite-ignore */ `https://esm.sh/zod@${ver}?dev`
+    );
+    if (requestId !== versionRequestId) return;
+    zodInstance.value = mod.z;
   } catch (e) {
-    error.value = `Failed to load Zod ${ver}: ${e instanceof Error ? e.message : String(e)}`
-    zodInstance.value = null
+    if (requestId !== versionRequestId) return;
+    error.value = `Failed to load Zod ${ver}: ${
+      e instanceof Error ? e.message : String(e)
+    }`;
+    zodInstance.value = null;
   } finally {
-    loading.value = false
+    if (requestId === versionRequestId) {
+      zodLoading.value = false;
+    }
   }
-})
+});
+
+watch(versionInput, (val) => {
+  if (versionDebounceTimer) clearTimeout(versionDebounceTimer);
+  versionDebounceTimer = setTimeout(() => {
+    if (val.trim()) {
+      selectedVersion.value = val.trim();
+    }
+  }, 600);
+});
 
 const activeSerializer = computed(() => {
-  const ver = selectedVersion.value
-  if (!ver) return v3Serializer.value
-  
+  const ver = selectedVersion.value;
+  if (!ver) return v3Serializer.value;
+
   // Use v4 serializer for versions starting with 4, v4, or explicit tags
   if (
-    ver.startsWith('4') || 
-    ver.startsWith('v4') || 
-    ver === 'latest' || 
-    ver === 'beta' || 
-    ver.includes('alpha')
+    ver.startsWith("4") ||
+    ver.startsWith("v4") ||
+    ver === "latest" ||
+    ver === "beta" ||
+    ver.includes("alpha")
   ) {
-    return v4Serializer.value
+    return v4Serializer.value;
   }
-  return v3Serializer.value
-})
+  return v3Serializer.value;
+});
 
 const output = computed(() => {
   if (!zodInstance.value || !activeSerializer.value) {
-    return '// Loading Zod...'
+    return "// Loading Zod...";
   }
 
   const options = {
     format: formatOutput.value,
-    indent: ' '.repeat(indentSize.value)
-  }
+    indent: " ".repeat(indentSize.value),
+  };
 
   try {
-    const z = zodInstance.value
-    const fn = new Function('z', `return (${inputCode.value})`)
-    const schema = fn(z)
+    const z = zodInstance.value;
+    const fn = new Function("z", `return (${inputCode.value})`);
+    const schema = fn(z);
 
-    if (outputMode.value === 'generateModule') {
-      return activeSerializer.value.generateModule({ [schemaName.value]: schema }, options)
+    if (outputMode.value === "generateModule") {
+      return activeSerializer.value.generateModule(
+        { [schemaName.value]: schema },
+        options
+      );
     } else {
-      return activeSerializer.value.serialize(schema, options)
+      return activeSerializer.value.serialize(schema, options);
     }
   } catch (e) {
-    return `// Error: ${e instanceof Error ? e.message : String(e)}`
+    return `// Error: ${e instanceof Error ? e.message : String(e)}`;
   }
-})
+});
 
 // Syntax highlighted output
 const highlightedOutput = computed(() => {
-  if (!highlighter.value) return output.value
+  if (!highlighter.value) return output.value;
   return highlighter.value.codeToHtml(output.value, {
-    lang: 'typescript',
+    lang: "typescript",
     themes: {
-      light: 'github-light',
-      dark: 'github-dark'
+      light: "github-light",
+      dark: "github-dark",
     },
-    defaultColor: 'light'  // 设置默认颜色为 light
-  })
-})
+  });
+});
 
 // Syntax highlighted input (for display)
 const highlightedInput = computed(() => {
-  if (!highlighter.value) return inputCode.value
+  if (!highlighter.value) return inputCode.value;
   return highlighter.value.codeToHtml(inputCode.value, {
-    lang: 'typescript',
+    lang: "typescript",
     themes: {
-      light: 'github-light',
-      dark: 'github-dark'
+      light: "github-light",
+      dark: "github-dark",
     },
-    defaultColor: 'light'  // 设置默认颜色为 light
-  })
-})
+  });
+});
 
 // Real-world examples from vanblog project
 const examples = [
   {
-    name: 'User',
-    desc: 'User schema with password validation',
+    name: "User",
+    desc: "User schema with password validation",
     code: `z.object({
   id: z.string().uuid(),
   username: z.string().min(3).max(20),
@@ -189,11 +221,11 @@ const examples = [
   role: z.enum(['admin', 'editor', 'user']),
   permissions: z.array(z.string()).default([]),
   createdAt: z.date(),
-})`
+})`,
   },
   {
-    name: 'Article',
-    desc: 'Blog article with nested content',
+    name: "Article",
+    desc: "Blog article with nested content",
     code: `z.object({
   id: z.number().int().positive(),
   title: z.string().min(1).max(200),
@@ -212,11 +244,11 @@ const examples = [
   views: z.number().int().nonnegative().default(0),
   createdAt: z.date(),
   updatedAt: z.date().optional(),
-})`
+})`,
   },
   {
-    name: 'Pagination',
-    desc: 'Query params with coercion',
+    name: "Pagination",
+    desc: "Query params with coercion",
     code: `z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
@@ -226,11 +258,11 @@ const examples = [
   tag: z.string().optional(),
   hidden: z.coerce.boolean().optional(),
   search: z.string().optional(),
-})`
+})`,
   },
   {
-    name: 'Config',
-    desc: 'Environment config schema',
+    name: "Config",
+    desc: "Environment config schema",
     code: `z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().max(65535).default(3000),
@@ -242,11 +274,11 @@ const examples = [
     z.array(z.string())
   ]).default('*'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-})`
+})`,
   },
   {
-    name: 'Navigation',
-    desc: 'Recursive menu structure',
+    name: "Navigation",
+    desc: "Recursive menu structure",
     code: `z.lazy(() => z.object({
   name: z.string(),
   path: z.string(),
@@ -260,11 +292,11 @@ const examples = [
       external: z.boolean().default(false),
     }))
   ).optional(),
-}))`
+}))`,
   },
   {
-    name: 'Analytics',
-    desc: 'Event tracking with nullable fields',
+    name: "Analytics",
+    desc: "Event tracking with nullable fields",
     code: `z.object({
   type: z.enum(['pageview', 'event', 'api_call']),
   path: z.string().optional().nullable(),
@@ -273,11 +305,11 @@ const examples = [
   ip: z.string().ip().optional().nullable(),
   timestamp: z.date().default(() => new Date()),
   data: z.record(z.string(), z.unknown()).optional(),
-})`
+})`,
   },
   {
-    name: 'File Upload',
-    desc: 'File validation with MIME type',
+    name: "File Upload",
+    desc: "File validation with MIME type",
     code: `z.object({
   filename: z.string().min(1),
   path: z.string().min(1),
@@ -288,11 +320,11 @@ const examples = [
   hash: z.string().length(64).optional(),
   uploadedBy: z.string().uuid(),
   createdAt: z.date(),
-})`
+})`,
   },
   {
-    name: 'Webhook',
-    desc: 'HTTP webhook with response',
+    name: "Webhook",
+    desc: "HTTP webhook with response",
     code: `z.object({
   id: z.string().uuid(),
   url: z.string().url(),
@@ -307,11 +339,11 @@ const examples = [
     body: z.unknown(),
     duration: z.number(),
   }).optional(),
-})`
+})`,
   },
   {
-    name: 'Transform',
-    desc: 'Data transformation pipeline',
+    name: "Transform",
+    desc: "Data transformation pipeline",
     code: `z.object({
   // JSON string to array
   tags: z.string()
@@ -332,11 +364,11 @@ const examples = [
   count: z.coerce.number()
     .transform(n => Math.max(0, n))
     .default(0),
-})`
+})`,
   },
   {
-    name: 'Discriminated',
-    desc: 'Discriminated union for API responses',
+    name: "Discriminated",
+    desc: "Discriminated union for API responses",
     code: `z.discriminatedUnion('status', [
   z.object({
     status: z.literal('success'),
@@ -361,11 +393,11 @@ const examples = [
       })).optional(),
     }),
   }),
-])`
+])`,
   },
   {
-    name: 'Comment',
-    desc: 'Comment with SMTP settings',
+    name: "Comment",
+    desc: "Comment with SMTP settings",
     code: `z.object({
   'smtp.enabled': z.boolean().default(false),
   'smtp.host': z.string().default(''),
@@ -377,11 +409,11 @@ const examples = [
   'sender.email': z.string().email().optional(),
   authorEmail: z.string().email().optional(),
   webhook: z.string().url().optional(),
-})`
+})`,
   },
   {
-    name: 'Refine',
-    desc: 'Custom validation with refine',
+    name: "Refine",
+    desc: "Custom validation with refine",
     code: `z.object({
   password: z.string().min(8),
   confirmPassword: z.string(),
@@ -398,16 +430,19 @@ const examples = [
 ).refine(
   data => data.maxPrice >= data.minPrice,
   { message: 'Max price must be >= min price', path: ['maxPrice'] }
-)`
+)`,
   },
-]
+];
 
-function loadExample(ex: typeof examples[0]) {
-  inputCode.value = ex.code
+function loadExample(ex: (typeof examples)[0]) {
+  inputCode.value = ex.code;
 }
-
-function copyOutput() {
-  navigator.clipboard.writeText(output.value)
+async function copyOutput() {
+  await navigator.clipboard.writeText(output.value);
+  copied.value = true;
+  setTimeout(() => {
+    copied.value = false;
+  }, 2000);
 }
 </script>
 
@@ -419,9 +454,6 @@ function copyOutput() {
       <span>Loading...</span>
     </div>
 
-    <!-- Error -->
-    <div v-else-if="error" class="error">{{ error }}</div>
-
     <!-- Main -->
     <template v-else>
       <!-- Nav Bar -->
@@ -430,12 +462,26 @@ function copyOutput() {
           <!-- Version -->
           <div class="nav-group input-group">
             <span class="input-prefix">zod@</span>
-            <input 
-              v-model.lazy="selectedVersion" 
+            <input
+              v-model="versionInput"
               class="version-input"
               placeholder="version"
-              @keydown.enter="(e) => (e.target as HTMLInputElement).blur()"
             />
+          </div>
+
+          <div class="nav-group version-presets">
+            <button
+              v-for="preset in ['3', '4', 'latest']"
+              :key="preset"
+              class="nav-btn preset-btn"
+              :class="{ active: selectedVersion === preset }"
+              @click="
+                selectedVersion = preset;
+                versionInput = preset;
+              "
+            >
+              {{ preset }}
+            </button>
           </div>
 
           <div class="nav-divider"></div>
@@ -445,11 +491,18 @@ function copyOutput() {
             <button
               :class="['nav-btn mode', { active: outputMode === 'serialize' }]"
               @mousedown.prevent="outputMode = 'serialize'"
-            >serialize()</button>
+            >
+              serialize()
+            </button>
             <button
-              :class="['nav-btn mode', { active: outputMode === 'generateModule' }]"
+              :class="[
+                'nav-btn mode',
+                { active: outputMode === 'generateModule' },
+              ]"
               @mousedown.prevent="outputMode = 'generateModule'"
-            >generateModule()</button>
+            >
+              generateModule()
+            </button>
           </div>
 
           <!-- Schema Name -->
@@ -467,14 +520,20 @@ function copyOutput() {
             <input type="checkbox" v-model="formatOutput" />
             <span>Format</span>
           </label>
-          <select v-if="formatOutput" v-model.number="indentSize" class="indent-select">
+          <select
+            v-if="formatOutput"
+            v-model.number="indentSize"
+            class="indent-select"
+          >
             <option :value="2">2 spaces</option>
             <option :value="4">4 spaces</option>
           </select>
         </div>
 
         <div class="nav-right">
-          <button class="copy-btn" @click="copyOutput">Copy</button>
+          <button class="copy-btn" :class="{ copied }" @click="copyOutput">
+            {{ copied ? "Copied!" : "Copy" }}
+          </button>
         </div>
       </nav>
 
@@ -488,12 +547,22 @@ function copyOutput() {
             class="example-btn"
             :title="ex.desc"
             @click="loadExample(ex)"
-          >{{ ex.name }}</button>
+          >
+            {{ ex.name }}
+          </button>
         </div>
       </div>
 
+      <!-- Zod version loading / error indicator -->
+      <div v-if="zodLoading" class="output-loading">
+        <div class="spinner"></div>
+        <span>Loading Zod {{ selectedVersion }}...</span>
+      </div>
+      <div v-else-if="!zodInstance && error" class="output-error">
+        {{ error }}
+      </div>
       <!-- Diff View -->
-      <div class="diff-view">
+      <div v-else class="diff-view">
         <!-- Input Panel -->
         <div class="diff-panel input-panel">
           <div class="panel-header">
@@ -502,7 +571,11 @@ function copyOutput() {
           </div>
           <div class="code-container">
             <!-- Highlighted code display layer -->
-            <div ref="highlightRef" class="code-highlight" v-html="highlightedInput"></div>
+            <div
+              ref="highlightRef"
+              class="code-highlight"
+              v-html="highlightedInput"
+            ></div>
             <!-- Editable textarea overlay -->
             <textarea
               ref="textareaRef"
@@ -527,7 +600,10 @@ function copyOutput() {
             <span class="panel-title">Output</span>
             <span class="panel-hint">Serialized Code</span>
           </div>
-          <div class="code-container code-output" v-html="highlightedOutput"></div>
+          <div
+            class="code-container code-output"
+            v-html="highlightedOutput"
+          ></div>
         </div>
       </div>
     </template>
@@ -542,7 +618,8 @@ function copyOutput() {
   background: var(--vp-c-bg);
 }
 
-.loading, .error {
+.loading,
+.error {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -566,7 +643,9 @@ function copyOutput() {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Nav Bar */
@@ -580,7 +659,8 @@ function copyOutput() {
   flex-shrink: 0;
 }
 
-.nav-left, .nav-right {
+.nav-left,
+.nav-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -703,6 +783,32 @@ function copyOutput() {
 .copy-btn:hover {
   background: var(--vp-c-brand-1);
   color: white;
+}
+
+.copy-btn.copied {
+  background: var(--vp-c-green-1);
+  border-color: var(--vp-c-green-1);
+  color: white;
+}
+
+.preset-btn {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.7rem;
+}
+
+.output-loading,
+.output-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  flex: 1;
+  color: var(--vp-c-text-2);
+}
+
+.output-error {
+  color: var(--vp-c-danger-1);
 }
 
 /* Examples Bar */

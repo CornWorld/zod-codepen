@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "zod-codepen"
   text: "Zod 模式序列化器"
-  tagline: 将运行时 Zod 模式对象转换为纯 Zod 代码字符串
+  tagline: 将 Zod 模式序列化为纯代码字符串 — 支持运行时和静态 AST 双路径
   actions:
     - theme: brand
       text: 快速开始
@@ -37,14 +37,17 @@ features:
     details: 一键生成完整的 TypeScript 模块，包含导入和导出语句
   - icon: 🧩
     title: 可扩展
-    details: 通过 registerHandler 注册自定义处理器，轻松扩展功能
+    details: 通过 IR 管道扩展：自定义 IR 节点、后处理 codegen、注册自定义类型处理器
+  - icon: 📄
+    title: 静态提取
+    details: 直接从 TypeScript 源码解析 Zod schema，无需执行用户代码（适合 Edge/Cloudflare Workers）
 ---
 
 ## 快速示例
 
 ```typescript
-import { serialize } from '@zod-codepen/zod-v3'; // 或 @zod-codepen/zod-v4
-import { z } from 'zod';
+import { serialize } from "@zod-codepen/zod-v3"; // 或 @zod-codepen/zod-v4
+import { z } from "zod";
 
 // 基础序列化
 serialize(z.string().email());
@@ -54,7 +57,7 @@ serialize(z.string().email());
 const UserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
-  role: z.enum(['admin', 'user']),
+  role: z.enum(["admin", "user"]),
 });
 
 serialize(UserSchema);

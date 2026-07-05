@@ -305,6 +305,56 @@ await generateSchemas({
 });
 ```
 
+### zodDecouplingStatic — 静态提取模式
+
+当 schema 文件依赖了构建环境无法执行的模块（如 drizzle-orm、pg），使用静态提取模式：
+
+```typescript
+// vite.config.ts
+import { zodDecouplingStatic } from "@zod-codepen/vite-plugin";
+
+export default defineConfig({
+  plugins: [
+    zodDecouplingStatic({
+      schemaEntry: "./src/runtime/schema.ts",
+      outputPath: "./src/generated/api-schemas.ts",
+      aliasFrom: "./runtime/schema",
+    }),
+  ],
+});
+```
+
+**与 `zodDecoupling` 的区别**：
+
+|                      | zodDecoupling                 | zodDecouplingStatic           |
+| -------------------- | ----------------------------- | ----------------------------- |
+| 如何读取 schema      | `await import()` 执行用户代码 | `fs.readFileSync()` 读纯文本  |
+| 如何解析 schema      | 运行时 `serialize()`          | 静态 `castFromAst()` 解析 AST |
+| 能否处理 drizzle-orm | ❌ 构建环境无法执行           | ✅ 纯文本解析，不执行代码     |
+| 函数体保留           | ✅ 能执行 transform 函数      | ⚠️ 函数体为 placeholder       |
+
+**选项**：
+
+```typescript
+interface ZodDecouplingStaticOptions {
+  schemaEntry: string; // schema 源文件路径
+  outputPath: string; // 生成文件路径
+  aliasFrom: string; // Vite alias 源路径
+  filter?: (name: string, ir: IRNode) => boolean;
+  includeTypes?: boolean; // 默认 true
+  header?: string;
+  verbose?: boolean;
+}
+```
+
+静态提取模式的过滤函数可以访问 `IRNode`，默认为：
+
+```typescript
+(name, ir) => ir.kind !== "raw" && ir.kind !== "fallback";
+```
+
+详见 [静态提取指南](/guide/static-extraction)。
+
 ## 工作流程
 
 ```mermaid

@@ -4,7 +4,7 @@
  * IR sits between version-specific Zod schema objects (v3/v4) and the final
  * TypeScript code string. Two casters feed IR:
  *   - castFromZod(): runtime Zod object -> IR (implemented this round)
- *   - castFromAst(): static AST source -> IR (future work)
+ *   - castFromAst(): static AST source -> IR
  *
  * Design constraints:
  *   - Pure data, no behavior. All rendering lives in codegen.

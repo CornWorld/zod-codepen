@@ -22,10 +22,10 @@ Compatible with both Zod v3 and v4, no version worries:
 
 ```typescript
 // Zod v3
-import { serialize } from '@zod-codepen/zod-v3';
+import { serialize } from "@zod-codepen/zod-v3";
 
 // Zod v4 (including all variants)
-import { serialize } from '@zod-codepen/zod-v4';
+import { serialize } from "@zod-codepen/zod-v4";
 ```
 
 ### 📦 Comprehensive Type Coverage
@@ -45,10 +45,10 @@ Automatically converts constraints to the most semantic method calls:
 
 ```typescript
 // Input
-z.number().min(0).max(100)
+z.number().min(0).max(100);
 
 // Output - using semantic methods
-'z.number().nonnegative().max(100)'
+("z.number().nonnegative().max(100)");
 ```
 
 ### 📝 Flexible Formatting
@@ -70,26 +70,36 @@ serialize(schema, { format: false });
 
 ## Architecture
 
+zod-codepen uses an **IR (Intermediate Representation) architecture** with two processing stages:
+
 ```
-┌─────────────────────────────────────────────────────┐
-│                   @zod-codepen/core                  │
-│  ┌───────────────┐  ┌───────────────────────────┐  │
-│  │  Serializer   │  │    Built-in Handlers      │  │
-│  │               │  │  string, number, object   │  │
-│  │  normalize    │  │  array, union, ...        │  │
-│  │  format       │  │                           │  │
-│  └───────────────┘  └───────────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-         ▲                        ▲
-         │                        │
-┌────────┴────────┐    ┌─────────┴─────────┐
-│ @zod-codepen/   │    │  @zod-codepen/    │
-│    zod-v3       │    │     zod-v4        │
-│                 │    │                   │
-│  v3 Adapter     │    │   v4 Adapter      │
-│  getType()      │    │   getType()       │
-│  getDef()       │    │   getDef()        │
-└─────────────────┘    └───────────────────┘
+Zod Schema → cast (caster) → IRNode → codegen → Code String
+```
+
+**Two cast paths**:
+
+- `castFromZod()` — runtime, requires actual Zod objects (v3/v4)
+- `castFromAst()` — static AST parsing, extracts from TypeScript source without executing user code
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    @zod-codepen/core                      │
+│                                                          │
+│   castFromZod()    ─┐                 ┌─  codegen()      │
+│   (runtime)          ├──►  IRNode  ──►│   (IR → code)    │
+│   castFromAst()    ─┘                 └─                 │
+│   (static AST)                                           │
+└──────────────────────────────────────────────────────────┘
+         ▲                                   ▲
+         │                                   │
+┌────────┴────────┐              ┌───────────┴───────────┐
+│ @zod-codepen/   │              │  @zod-codepen/        │
+│  zod-v3 / v4    │              │  vite-plugin          │
+│                 │              │                       │
+│  v3/v4 Adapter  │              │  zodDecoupling        │
+│  getType()      │              │  zodDecouplingStatic  │
+│  getDef()       │              │                       │
+└─────────────────┘              └───────────────────────┘
 ```
 
 ## Next Steps

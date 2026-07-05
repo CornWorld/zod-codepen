@@ -7,7 +7,9 @@
 ```typescript
 import {
   generateSchemas,
+  generateSchemasFromSource,
   zodDecouplingAlias,
+  zodDecouplingStatic,
   zodDecoupling,
   createZodV3Adapter,
   createZodV4Adapter,
@@ -309,6 +311,16 @@ export default defineConfig({
 ::: warning 限制
 此插件在 `buildStart` 时动态导入 `schemaEntry`。如果该文件依赖服务端库（如 drizzle-orm），导入可能失败。这种情况下，请使用独立脚本模式 + `zodDecouplingAlias`。
 :::
+
+---
+
+## zodDecouplingStatic
+
+静态提取插件。不执行用户代码，通过 TypeScript compiler API 将源码 AST 转成 IR 再 codegen 为纯 Zod 代码。适合 schema 依赖 drizzle-orm 等重运行时的场景。详见 [静态提取指南](/guide/static-extraction)。
+
+## generateSchemasFromSource
+
+静态生成函数。接收 TypeScript 源码字符串，使用 `castAllFromAst` 提取所有 schema 并写入文件。不执行用户代码。
 
 ---
 

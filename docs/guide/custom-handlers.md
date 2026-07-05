@@ -1,249 +1,92 @@
-# 自定义处理器
+# 自定义和扩展
 
-zod-codepen 允许您注册自定义处理器来扩展或覆盖内置的序列化行为。
+> zod-codepen 的扩展点说明。
 
-## registerHandler()
+## IR 架构下的扩展方式
 
-```typescript
-function registerHandler(type: string, handler: SchemaHandler): void
+zod-codepen 基于 **IR（中间表示）管道**工作：
+
+```
+Zod Schema → cast → IRNode → codegen → Code String
 ```
 
-### 参数
+扩展可以从多个层级介入：
 
-- `type` - 要处理的模式类型名称（如 `'string'`, `'custom'`）
-- `handler` - 处理函数
+### 层级 1：Codegen 后处理（最简单）
 
-### SchemaHandler 类型
+如果只需要调整最终输出的代码字符串，在 codegen 之后修改即可：
 
 ```typescript
-type SchemaHandler = (
-  schema: unknown,
-  ctx: SerializerContext,
-) => string | undefined;
+import { codegen } from "@zod-codepen/core";
 
-interface SerializerContext {
-  adapter: ZodAdapter;
-  options: Required<SerializeOptions>;
-  indent: (level?: number) => string;
-  serialize: (schema: unknown, indentLevel?: number) => string;
-}
+const ir = castFromAst(source, "MySchema");
+let code = codegen(ir);
+// 后处理：例如添加自定义导入
+code = `import { custom } from './utils';\n\n${code}`;
 ```
 
-## 基本用法
+### 层级 2：IR 节点扩展
 
-### 覆盖内置处理器
+如果需要新的 schema 形态，可以直接构造 IR 节点并传给 codegen：
 
 ```typescript
-import { registerHandler, serialize } from '@zod-codepen/zod-v3';
-import { z } from 'zod';
+import { codegen } from "@zod-codepen/core";
+import type { IRNode } from "@zod-codepen/core";
 
-// 自定义字符串处理
-registerHandler('string', (schema, ctx) => {
-  // 添加注释
-  return '/* custom string */ z.string()';
-});
+const customNode: IRNode = {
+  kind: "raw",
+  code: "z.custom((val) => val instanceof MyClass)",
+  reason: "custom-class-instance-check",
+};
 
-serialize(z.string());
-// → '/* custom string */ z.string()'
+const output = codegen(customNode);
 ```
 
-### 添加新类型处理器
+`RawNode` 是通用 escape hatch，可以渲染任意 Zod 代码字符串。
+
+### 层级 3：适配器扩展（v3/v4）
+
+如果需要支持新版本的 Zod 或自定义 Zod 变体，可以实现 `ZodAdapter` 接口：
 
 ```typescript
-// 处理自定义类型
-registerHandler('myCustomType', (schema, ctx) => {
-  return 'z.custom(/* ... */)';
-});
+import type { ZodAdapter } from "@zod-codepen/core";
+
+const myAdapter: ZodAdapter = {
+  version: "v3",
+  getType(schema: unknown) {
+    // 返回 schema 类型字符串
+    return (schema as any)?._def?.typeName;
+  },
+  getDef(schema: unknown) {
+    return (schema as any)?._def;
+  },
+  isZodSchema(value: unknown) {
+    return !!(value as any)?._def;
+  },
+};
 ```
 
-## SerializerContext
+### 层级 4：注册自定义处理器（兼容旧 API）
 
-处理器接收一个上下文对象，提供以下功能：
-
-### ctx.adapter
-
-访问当前适配器：
+`registerHandler()` 仍可使用，用于运行时序列化器的自定义类型：
 
 ```typescript
-registerHandler('object', (schema, ctx) => {
-  // 获取模式定义
-  const def = ctx.adapter.getDef(schema);
+import { serialize, registerHandler } from "@zod-codepen/zod-v3";
 
-  // 获取类型名称
-  const type = ctx.adapter.getType(schema);
-
-  // 检查是否为 Zod 模式
-  const isZod = ctx.adapter.isZodSchema(someValue);
-
-  // ...
-});
-```
-
-### ctx.options
-
-访问格式化选项：
-
-```typescript
-registerHandler('array', (schema, ctx) => {
-  const { indent, format, indentLevel } = ctx.options;
-
-  if (!format) {
-    return 'z.array(...)';  // 单行
-  }
-
-  // 格式化输出
-  return `z.array(\n${indent.repeat(indentLevel + 1)}...\n${indent.repeat(indentLevel)})`;
+registerHandler("MyCustomType", (schema, ctx) => {
+  // schema: 原始 Zod schema 对象
+  // ctx: SerializerContext（含 adapter, options, indent, serialize）
+  return `z.custom(/* ... */)`;
 });
 ```
 
-### ctx.indent()
+::: warning 注意
+`registerHandler` 仅影响运行时序列化路径（`castFromZod`）。静态提取（`castFromAst`）不会触发自定义处理器。如需静态提取自定义类型，请在 codegen 后做字符串替换。
+:::
 
-生成缩进字符串：
+## 相关 API
 
-```typescript
-registerHandler('object', (schema, ctx) => {
-  const indent1 = ctx.indent(1);  // 当前级别 + 1
-  const indent2 = ctx.indent(2);  // 当前级别 + 2
-
-  return `z.object({\n${indent1}key: value\n})`;
-});
-```
-
-### ctx.serialize()
-
-递归序列化嵌套模式：
-
-```typescript
-registerHandler('array', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema);
-  const elementSchema = def.type || def.element;
-
-  // 递归序列化元素类型
-  const elementCode = ctx.serialize(elementSchema);
-
-  return `z.array(${elementCode})`;
-});
-```
-
-## 实际示例
-
-### 带注释的对象
-
-```typescript
-registerHandler('object', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema) as Record<string, unknown>;
-  const shape = typeof def.shape === 'function' ? def.shape() : def.shape;
-
-  if (!shape || Object.keys(shape).length === 0) {
-    return 'z.object({})';
-  }
-
-  const indent = ctx.indent(1);
-  const entries = Object.entries(shape)
-    .map(([key, value]) => {
-      const valueCode = ctx.serialize(value, ctx.options.indentLevel + 1);
-      // 添加字段注释
-      return `${indent}/** Field: ${key} */\n${indent}${key}: ${valueCode}`;
-    })
-    .join(',\n');
-
-  return `z.object({\n${entries}\n${ctx.indent()}})`;
-});
-```
-
-### 自定义验证器序列化
-
-```typescript
-import { z } from 'zod';
-
-// 假设有一个自定义验证器
-const PhoneNumber = z.string().refine(
-  (val) => /^\+?[1-9]\d{1,14}$/.test(val),
-  { message: 'Invalid phone number' }
-);
-
-// 注册处理器来识别它
-registerHandler('string', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema) as Record<string, unknown>;
-
-  // 检查是否有特定的验证逻辑
-  const checks = def.checks as Array<Record<string, unknown>> || [];
-  const hasPhoneValidation = checks.some(c => {
-    // 检测电话号码验证
-    return c.message === 'Invalid phone number';
-  });
-
-  if (hasPhoneValidation) {
-    return 'PhoneNumber';  // 返回自定义标识符
-  }
-
-  // 回退到默认处理
-  return undefined;
-});
-```
-
-### 简化的枚举输出
-
-```typescript
-registerHandler('enum', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema) as Record<string, unknown>;
-  const values = def.values as string[];
-
-  // 如果值少于等于3个，使用联合类型风格
-  if (values.length <= 3) {
-    return values.map(v => `'${v}'`).join(' | ');
-  }
-
-  // 否则使用标准枚举
-  return `z.enum([${values.map(v => `"${v}"`).join(', ')}])`;
-});
-```
-
-## 返回 undefined
-
-当处理器返回 `undefined` 时，序列化器将使用内置处理器：
-
-```typescript
-registerHandler('string', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema);
-
-  // 只处理特殊情况
-  if (isSpecialCase(def)) {
-    return 'z.special()';
-  }
-
-  // 其他情况使用默认处理
-  return undefined;
-});
-```
-
-## 处理器优先级
-
-自定义处理器优先于内置处理器：
-
-```typescript
-// 1. 首先检查自定义处理器
-// 2. 如果返回 undefined，使用内置处理器
-// 3. 如果没有匹配的处理器，返回 'z.unknown()'
-```
-
-## 调试技巧
-
-```typescript
-registerHandler('object', (schema, ctx) => {
-  const def = ctx.adapter.getDef(schema);
-
-  // 调试：打印模式结构
-  console.log('Object schema def:', JSON.stringify(def, null, 2));
-
-  // 返回 undefined 使用默认处理
-  return undefined;
-});
-```
-
-## 注意事项
-
-1. **类型安全** - 处理器接收 `unknown` 类型，需要自行进行类型断言
-2. **递归处理** - 使用 `ctx.serialize()` 处理嵌套模式
-3. **格式一致性** - 遵循 `ctx.options` 中的格式设置
-4. **回退机制** - 返回 `undefined` 让默认处理器接管
+- [createSerializer()](/api/create-serializer) — 底层序列化器创建
+- [castFromAst()](/api/cast-from-ast) — 静态 AST 提取
+- [codegen()](/guide/static-extraction) — IR → 代码字符串
+- [ZodAdapter](/api/types/zod-adapter) — 适配器接口
