@@ -44,7 +44,8 @@ export interface AstJsonDocument {
  *   - `RegExp` → `{_regex: "/pattern/flags"}`
  *   - `function` → `{_unsupported: "function"}`
  *   - `symbol` → `{_unsupported: "symbol"}`
- *   - `string` / `number` / `boolean` → pass through
+ *   - `string` / `boolean` → pass through
+ *   - `number` → pass through (NaN → `{_nan: true}`, Infinity → `{_infinity: ±1}`)
  *   - everything else → JSON.stringify fallback
  */
 function encodeValue(value: unknown): unknown {
