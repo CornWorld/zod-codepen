@@ -36,6 +36,7 @@ import {
   codegen,
   type CodegenOptions,
   type IRNode,
+  schemasToJson,
 } from "@zod-codepen/core";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -502,6 +503,8 @@ export interface GenerateFromSourceOptions {
   header?: string;
   /** Codegen options (indent, format, optimizations). */
   codegenOptions?: CodegenOptions;
+  /** Output format: "ts" for TypeScript code (default), "json" for JSON AST */
+  outputFormat?: "ts" | "json";
   /** Verbose logging. @default false */
   verbose?: boolean;
 }
@@ -536,6 +539,7 @@ export async function generateSchemasFromSource(
     includeTypes = true,
     header,
     codegenOptions,
+    outputFormat = "ts",
     verbose = false,
   } = options;
 
@@ -551,6 +555,24 @@ export async function generateSchemasFromSource(
     fileName: path.resolve(fileName),
     resolver: astResolver,
   });
+
+  if (outputFormat === "json") {
+    const filtered = results.filter(({ name, ir }) => {
+      if (name.startsWith("$") || name.endsWith("Type")) return false;
+      if (!filter(name, ir)) return false;
+      return true;
+    });
+    const doc = schemasToJson(filtered);
+    const json = JSON.stringify(doc, null, 2);
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    fs.writeFileSync(outputPath, json);
+    log(`Emitted ${filtered.length} schema(s) as JSON AST`);
+    log(`Generated JSON AST: ${outputPath}`);
+    return;
+  }
 
   const cgOpts: CodegenOptions = codegenOptions ?? {
     indent: "  ",
@@ -717,3 +739,7 @@ export type {
   IRNode,
   CodegenOptions,
 } from "@zod-codepen/core";
+
+// Re-export JSON AST helpers
+export { schemasToJson, irToJson } from "@zod-codepen/core";
+export type { AstJsonDocument } from "@zod-codepen/core";

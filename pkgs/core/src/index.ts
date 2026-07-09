@@ -73,3 +73,7 @@ export { ModuleResolver, makeAstResolver } from "./extract/resolver.js";
 export type { ModuleResolverOptions } from "./extract/resolver.js";
 export { tryInlineWrapper } from "./extract/inline.js";
 export type { InlineOptions, InlineResult } from "./extract/inline.js";
+
+// IR → JSON AST serialization
+export { irToJson, schemasToJson, AST_JSON_VERSION } from "./ir/json.js";
+export type { AstJsonDocument } from "./ir/json.js";

@@ -166,3 +166,82 @@ describe("zodDecouplingStatic — Vite plugin shape", () => {
     expect(plugin.enforce).toBe("pre");
   });
 });
+
+describe("generateSchemasFromSource — JSON output", () => {
+  let tmpOut: string;
+
+  beforeEach(() => {
+    tmpOut = path.join(
+      os.tmpdir(),
+      `zod-codepen-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    fs.mkdirSync(tmpOut, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpOut, { recursive: true, force: true });
+  });
+
+  it("outputs valid JSON when outputFormat is 'json'", () => {
+    const out = path.join(tmpOut, "schemas.json");
+    generateSchemasFromSource({
+      source: readSchemaSrc(),
+      fileName: SCHEMA_PATH,
+      rootDir: FIXTURE_ROOT,
+      outputPath: out,
+      outputFormat: "json",
+    });
+
+    const raw = fs.readFileSync(out, "utf-8");
+    const parsed = JSON.parse(raw); // should not throw
+    expect(parsed.version).toBe(1);
+    expect(parsed.schemas).toBeDefined();
+    expect(parsed.schemas.User).toBeDefined();
+    expect(parsed.schemas.User.kind).toBe("object");
+  });
+
+  it("default outputFormat is 'ts' (backward compatible)", () => {
+    const out = path.join(tmpOut, "out.ts");
+    generateSchemasFromSource({
+      source: readSchemaSrc(),
+      fileName: SCHEMA_PATH,
+      rootDir: FIXTURE_ROOT,
+      outputPath: out,
+      // no outputFormat — should default to "ts"
+    });
+
+    const written = fs.readFileSync(out, "utf-8");
+    expect(written).toContain("AUTO-GENERATED FILE");
+    expect(written).toContain("import { z } from");
+  });
+
+  it("JSON output for Primo-style fixture", () => {
+    const primoPath = path.join(FIXTURE_ROOT, "primo-sample.ts");
+    const primoSource = fs.readFileSync(primoPath, "utf-8");
+    const out = path.join(tmpOut, "primo.json");
+    generateSchemasFromSource({
+      source: primoSource,
+      fileName: primoPath,
+      rootDir: FIXTURE_ROOT,
+      outputPath: out,
+      outputFormat: "json",
+    });
+
+    const parsed = JSON.parse(fs.readFileSync(out, "utf-8"));
+    expect(parsed.schemas.Page.kind).toBe("object");
+    expect(parsed.schemas.Page.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "id" }),
+        expect.objectContaining({ key: "title" }),
+      ]),
+    );
+    // discriminatedUnion
+    expect(parsed.schemas.Block.kind).toBe("union");
+    expect(parsed.schemas.Block.discriminator).toBe("type");
+    // simple union
+    expect(parsed.schemas.StringOrNumber.kind).toBe("union");
+    // literal
+    expect(parsed.schemas.DefaultTheme.kind).toBe("literal");
+    expect(parsed.schemas.DefaultTheme.value).toBe("light");
+  });
+});
