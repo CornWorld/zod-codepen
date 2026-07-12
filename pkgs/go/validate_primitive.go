@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func validatePrimitive(vc *validationCtx, n *PrimitiveNode, path []string, input any) {
@@ -123,7 +124,6 @@ func validateBoolean(vc *validationCtx, n *PrimitiveNode, path []string, input a
 }
 
 func validateDate(vc *validationCtx, n *PrimitiveNode, path []string, input any) {
-	// In JSON, dates are represented as ISO 8601 strings.
 	s, ok := input.(string)
 	if !ok {
 		vc.addError(path, "invalid_type",
@@ -131,16 +131,16 @@ func validateDate(vc *validationCtx, n *PrimitiveNode, path []string, input any)
 		return
 	}
 
-	// Try parsing common date formats.
-	if !isValidDateString(s) {
+	t, err := parseDateString(s)
+	if err != nil {
 		vc.addError(path, "invalid_date",
-			fmt.Sprintf("invalid date string: %q", s),
+			fmt.Sprintf("invalid date string %q: %v", s, err),
 			"date", s)
 		return
 	}
 
 	for _, c := range n.Constraints {
-		validateDateConstraint(vc, c, path, s)
+		validateDateConstraint(vc, c, path, t)
 	}
 }
 
@@ -254,41 +254,38 @@ func goTypeName(input any) string {
 	}
 }
 
-// isValidDateString checks if s looks like an ISO 8601 date.
+// parseDateString attempts to parse s as an ISO 8601 date/datetime.
+// Supports multiple common formats:
+//
+//	2006-01-02              (date only)
+//	2006-01-02T15:04:05Z     (UTC datetime)
+//	2006-01-02T15:04:05+07:00 (with timezone offset)
+//	2006-01-02T15:04:05       (datetime, no timezone)
+func parseDateString(s string) (time.Time, error) {
+	// Try date-only format.
+	if len(s) == 10 && s[4] == '-' && s[7] == '-' {
+		return time.Parse("2006-01-02", s)
+	}
+	// Try full ISO 8601 with timezone.
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
+	// Try datetime without timezone.
+	if t, err := time.Parse("2006-01-02T15:04:05", s); err == nil {
+		return t, nil
+	}
+	// Try with milliseconds.
+	if t, err := time.Parse("2006-01-02T15:04:05.000Z", s); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("unrecognized date format")
+}
+
+// isValidDateString is kept for backward compatibility with string constraints
+// that need date format validation (e.g., "datetime" string constraint).
 func isValidDateString(s string) bool {
-	// Simple heuristic: must contain at least "YYYY-MM-DD".
-	if len(s) < 10 {
-		return false
-	}
-	// Check for basic ISO format.
-	if s[4] != '-' || s[7] != '-' {
-		return false
-	}
-	for i := 0; i < 4; i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return false
-		}
-	}
-	for i := 5; i < 7; i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return false
-		}
-	}
-	for i := 8; i < 10; i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return false
-		}
-	}
-	// Check month range.
-	month := (int(s[5]-'0')*10 + int(s[6]-'0'))
-	day := (int(s[8]-'0')*10 + int(s[9]-'0'))
-	if month < 1 || month > 12 {
-		return false
-	}
-	if day < 1 || day > 31 {
-		return false
-	}
-	return true
+	_, err := parseDateString(s)
+	return err == nil
 }
 
 // stringConstraint helpers
@@ -502,15 +499,51 @@ func validateBigIntConstraint(vc *validationCtx, c ConstraintNode, path []string
 	}
 }
 
-func validateDateConstraint(vc *validationCtx, c ConstraintNode, path []string, _ string) {
-	// Date constraints would need actual time parsing.
-	// For now, skip date constraints as they require full time.Time support.
+func validateDateConstraint(vc *validationCtx, c ConstraintNode, path []string, t time.Time) {
 	switch c.Name {
 	case "min":
-		vc.addError(path, "unsupported_constraint",
-			"date min constraint not yet implemented", "", "")
+		minT, err := parseDateConstraint(c)
+		if err != nil {
+			vc.addError(path, "invalid_constraint",
+				fmt.Sprintf("date min constraint parse error: %v", err), "", "")
+			return
+		}
+		if t.Before(minT) {
+			vc.addError(path, "too_small",
+				fmt.Sprintf("date must be >= %s", minT.Format("2006-01-02")),
+				">="+minT.Format("2006-01-02"), t.Format("2006-01-02"))
+		}
 	case "max":
-		vc.addError(path, "unsupported_constraint",
-			"date max constraint not yet implemented", "", "")
+		maxT, err := parseDateConstraint(c)
+		if err != nil {
+			vc.addError(path, "invalid_constraint",
+				fmt.Sprintf("date max constraint parse error: %v", err), "", "")
+			return
+		}
+		if t.After(maxT) {
+			vc.addError(path, "too_big",
+				fmt.Sprintf("date must be <= %s", maxT.Format("2006-01-02")),
+				"<="+maxT.Format("2006-01-02"), t.Format("2006-01-02"))
+		}
 	}
+}
+
+// parseDateConstraint extracts a time.Time from a constraint's value or min/max fields.
+func parseDateConstraint(c ConstraintNode) (time.Time, error) {
+	if c.Params.Value != nil {
+		if s, ok := c.Params.Value.Any().(string); ok {
+			return parseDateString(s)
+		}
+	}
+	if c.Params.Minimum != nil {
+		if s, ok := c.Params.Minimum.Any().(string); ok {
+			return parseDateString(s)
+		}
+	}
+	if c.Params.Maximum != nil {
+		if s, ok := c.Params.Maximum.Any().(string); ok {
+			return parseDateString(s)
+		}
+	}
+	return time.Time{}, fmt.Errorf("no parseable date value in constraint")
 }
