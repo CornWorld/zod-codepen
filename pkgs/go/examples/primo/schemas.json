@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "schemas": {
+    "Page": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "id",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        },
+        {
+          "key": "title",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": [
+              {
+                "kind": "constraint",
+                "target": "string",
+                "name": "min",
+                "params": {
+                  "value": 1
+                }
+              },
+              {
+                "kind": "constraint",
+                "target": "string",
+                "name": "max",
+                "params": {
+                  "value": 200
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "slug",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": [
+              {
+                "kind": "constraint",
+                "target": "string",
+                "name": "regex",
+                "params": {
+                  "regex": {
+                    "_regex": "/^[a-z0-9-]+$/"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "status",
+          "value": {
+            "kind": "enum",
+            "variant": "enum",
+            "values": ["draft", "published", "archived"]
+          }
+        },
+        {
+          "key": "views",
+          "value": {
+            "kind": "primitive",
+            "primitive": "number",
+            "constraints": [
+              {
+                "kind": "constraint",
+                "target": "number",
+                "name": "int",
+                "params": {}
+              },
+              {
+                "kind": "constraint",
+                "target": "number",
+                "name": "nonnegative",
+                "params": {}
+              }
+            ]
+          }
+        },
+        {
+          "key": "content",
+          "value": {
+            "kind": "modified",
+            "inner": {
+              "kind": "primitive",
+              "primitive": "string",
+              "constraints": []
+            },
+            "modifiers": [
+              {
+                "kind": "modifier",
+                "name": "optional"
+              }
+            ]
+          }
+        },
+        {
+          "key": "publishedAt",
+          "value": {
+            "kind": "modified",
+            "inner": {
+              "kind": "primitive",
+              "primitive": "date",
+              "constraints": []
+            },
+            "modifiers": [
+              {
+                "kind": "modifier",
+                "name": "nullable"
+              }
+            ]
+          }
+        }
+      ],
+      "unknownMode": "strip"
+    },
+    "Block": {
+      "kind": "union",
+      "options": [
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "key": "type",
+              "value": {
+                "kind": "literal",
+                "value": "text"
+              }
+            },
+            {
+              "key": "body",
+              "value": {
+                "kind": "primitive",
+                "primitive": "string",
+                "constraints": []
+              }
+            }
+          ],
+          "unknownMode": "strip"
+        },
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "key": "type",
+              "value": {
+                "kind": "literal",
+                "value": "heading"
+              }
+            },
+            {
+              "key": "text",
+              "value": {
+                "kind": "primitive",
+                "primitive": "string",
+                "constraints": []
+              }
+            },
+            {
+              "key": "level",
+              "value": {
+                "kind": "primitive",
+                "primitive": "number",
+                "constraints": []
+              }
+            }
+          ],
+          "unknownMode": "strip"
+        },
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "key": "type",
+              "value": {
+                "kind": "literal",
+                "value": "image"
+              }
+            },
+            {
+              "key": "url",
+              "value": {
+                "kind": "primitive",
+                "primitive": "string",
+                "constraints": [
+                  {
+                    "kind": "constraint",
+                    "target": "string",
+                    "name": "url",
+                    "params": {}
+                  }
+                ]
+              }
+            },
+            {
+              "key": "alt",
+              "value": {
+                "kind": "modified",
+                "inner": {
+                  "kind": "primitive",
+                  "primitive": "string",
+                  "constraints": []
+                },
+                "modifiers": [
+                  {
+                    "kind": "modifier",
+                    "name": "optional"
+                  }
+                ]
+              }
+            }
+          ],
+          "unknownMode": "strip"
+        }
+      ],
+      "discriminator": "type"
+    },
+    "StringOrNumber": {
+      "kind": "union",
+      "options": [
+        {
+          "kind": "primitive",
+          "primitive": "string",
+          "constraints": []
+        },
+        {
+          "kind": "primitive",
+          "primitive": "number",
+          "constraints": []
+        }
+      ]
+    },
+    "TagList": {
+      "kind": "array",
+      "element": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "constraints": [
+        {
+          "kind": "constraint",
+          "target": "array",
+          "name": "min",
+          "params": {
+            "value": 1
+          }
+        }
+      ]
+    },
+    "DefaultTheme": {
+      "kind": "literal",
+      "value": "light"
+    }
+  }
+}

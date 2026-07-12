@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "schemas": {
+    "StringSchema": {
+      "kind": "primitive",
+      "primitive": "string",
+      "constraints": []
+    },
+    "StringWithConstraints": {
+      "kind": "primitive",
+      "primitive": "string",
+      "constraints": [
+        {
+          "kind": "constraint",
+          "target": "string",
+          "name": "min",
+          "params": { "value": 3 }
+        },
+        {
+          "kind": "constraint",
+          "target": "string",
+          "name": "max",
+          "params": { "value": 100 }
+        },
+        {
+          "kind": "constraint",
+          "target": "string",
+          "name": "email",
+          "params": {}
+        }
+      ]
+    },
+    "NumberWithConstraints": {
+      "kind": "primitive",
+      "primitive": "number",
+      "constraints": [
+        {
+          "kind": "constraint",
+          "target": "number",
+          "name": "min",
+          "params": { "value": 0 }
+        },
+        {
+          "kind": "constraint",
+          "target": "number",
+          "name": "max",
+          "params": { "value": 100 }
+        },
+        {
+          "kind": "constraint",
+          "target": "number",
+          "name": "int",
+          "params": {}
+        }
+      ]
+    },
+    "CoerceNumber": {
+      "kind": "primitive",
+      "primitive": "number",
+      "coerce": true,
+      "constraints": []
+    },
+    "BooleanSchema": {
+      "kind": "primitive",
+      "primitive": "boolean",
+      "constraints": []
+    },
+    "AnySchema": {
+      "kind": "primitive",
+      "primitive": "any",
+      "constraints": []
+    },
+    "NeverSchema": {
+      "kind": "primitive",
+      "primitive": "never",
+      "constraints": []
+    }
+  }
+}

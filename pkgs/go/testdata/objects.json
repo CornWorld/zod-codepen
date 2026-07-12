@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "schemas": {
+    "SimpleObject": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "name",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        },
+        {
+          "key": "age",
+          "value": {
+            "kind": "primitive",
+            "primitive": "number",
+            "constraints": []
+          }
+        }
+      ],
+      "unknownMode": "strip"
+    },
+    "StrictObject": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "id",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        }
+      ],
+      "unknownMode": "strict"
+    },
+    "PassthroughObject": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "id",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        }
+      ],
+      "unknownMode": "passthrough"
+    },
+    "ObjectWithCatchall": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "id",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        }
+      ],
+      "unknownMode": "passthrough",
+      "catchall": {
+        "kind": "primitive",
+        "primitive": "number",
+        "constraints": []
+      }
+    },
+    "ObjectWithOptional": {
+      "kind": "object",
+      "fields": [
+        {
+          "key": "id",
+          "value": {
+            "kind": "primitive",
+            "primitive": "string",
+            "constraints": []
+          }
+        },
+        {
+          "key": "bio",
+          "value": {
+            "kind": "modified",
+            "inner": {
+              "kind": "primitive",
+              "primitive": "string",
+              "constraints": []
+            },
+            "modifiers": [{ "kind": "modifier", "name": "optional" }]
+          }
+        }
+      ],
+      "unknownMode": "strip"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "schemas": {
+    "OptionalString": {
+      "kind": "modified",
+      "inner": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "modifiers": [{ "kind": "modifier", "name": "optional" }]
+    },
+    "NullableString": {
+      "kind": "modified",
+      "inner": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "modifiers": [{ "kind": "modifier", "name": "nullable" }]
+    },
+    "NullishString": {
+      "kind": "modified",
+      "inner": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "modifiers": [{ "kind": "modifier", "name": "nullish" }]
+    },
+    "DefaultString": {
+      "kind": "modified",
+      "inner": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "modifiers": [{ "kind": "modifier", "name": "default", "value": "hello" }]
+    },
+    "OptionalDefault": {
+      "kind": "modified",
+      "inner": {
+        "kind": "primitive",
+        "primitive": "string",
+        "constraints": []
+      },
+      "modifiers": [
+        { "kind": "modifier", "name": "optional" },
+        { "kind": "modifier", "name": "default", "value": "fallback" }
+      ]
+    }
+  }
+}

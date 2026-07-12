@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "schemas": {
+    "StringOrNumber": {
+      "kind": "union",
+      "options": [
+        { "kind": "primitive", "primitive": "string", "constraints": [] },
+        { "kind": "primitive", "primitive": "number", "constraints": [] }
+      ]
+    },
+    "DiscriminatedBlock": {
+      "kind": "union",
+      "options": [
+        {
+          "kind": "object",
+          "fields": [
+            { "key": "type", "value": { "kind": "literal", "value": "text" } },
+            {
+              "key": "body",
+              "value": {
+                "kind": "primitive",
+                "primitive": "string",
+                "constraints": []
+              }
+            }
+          ],
+          "unknownMode": "strip"
+        },
+        {
+          "kind": "object",
+          "fields": [
+            {
+              "key": "type",
+              "value": { "kind": "literal", "value": "heading" }
+            },
+            {
+              "key": "level",
+              "value": {
+                "kind": "primitive",
+                "primitive": "number",
+                "constraints": []
+              }
+            }
+          ],
+          "unknownMode": "strip"
+        }
+      ],
+      "discriminator": "type"
+    },
+    "Enum": {
+      "kind": "enum",
+      "variant": "enum",
+      "values": ["draft", "published", "archived"]
+    },
+    "LiteralValue": {
+      "kind": "literal",
+      "value": "light"
+    }
+  }
+}
