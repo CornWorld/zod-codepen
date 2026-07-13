@@ -1,0 +1,223 @@
+# Auto-generated capability manifest for zod-codepen sync.
+# Last updated: 2026-07-12
+# Sync baseline: zod-codepen v1.0.3
+
+version: 1
+zod_baseline:
+  v3: "3.24.2"
+  v4: "4.0.0-beta.1"
+
+# --- IR Node Types ---
+# When Zod adds a new type (e.g. z.file()), a new IR node kind may be needed.
+ir_node_kinds:
+  - primitive
+  - literal
+  - enum
+  - array
+  - object
+  - tuple
+  - record
+  - map
+  - set
+  - union
+  - intersection
+  - modified
+  - transform
+  - refine
+  - preprocess
+  - pipe
+  - zod-function
+  - lazy
+  - promise
+  - fallback
+  - raw
+
+# --- Primitive Types ---
+# Maps Zod primitives to Go validation targets.
+primitive_types:
+  string:
+    zod: "z.string()"
+    go_target: string
+    coerce_supported: true
+  number:
+    zod: "z.number()"
+    go_target: float64
+    coerce_supported: true
+  bigint:
+    zod: "z.bigint()"
+    go_target: "*big.Int"
+    coerce_supported: true
+  boolean:
+    zod: "z.boolean()"
+    go_target: bool
+    coerce_supported: true
+  date:
+    zod: "z.date()"
+    go_target: "time.Time"
+    coerce_supported: false
+  null:
+    zod: "z.null()"
+    go_target: nil
+    coerce_supported: false
+  undefined:
+    zod: "z.undefined()"
+    go_target: nil
+    coerce_supported: false
+  void:
+    zod: "z.void()"
+    go_target: nil
+    coerce_supported: false
+  any:
+    zod: "z.any()"
+    go_target: any
+    coerce_supported: false
+  unknown:
+    zod: "z.unknown()"
+    go_target: any
+    coerce_supported: false
+  never:
+    zod: "z.never()"
+    go_target: never
+    coerce_supported: false
+  nan:
+    zod: "z.nan()"
+    go_target: "float64(NaN)"
+    coerce_supported: false
+  symbol:
+    zod: "z.symbol()"
+    go_target: unsupported
+    coerce_supported: false
+
+# --- String Constraints ---
+# When Zod adds a new string method, add a row here.
+# Template: go-constraint-string-{simple|regex|builtin}.txt
+string_constraints:
+  - name: min
+    zod_api: "z.string().min(n)"
+    params: [value]
+    go_impl: standard_length_check
+    go_file: validate_primitive.go
+  - name: max
+    zod_api: "z.string().max(n)"
+    params: [value]
+    go_impl: standard_length_check
+    go_file: validate_primitive.go
+  - name: length
+    zod_api: "z.string().length(n)"
+    params: [value]
+    go_impl: standard_length_check
+    go_file: validate_primitive.go
+  - name: nonempty
+    zod_api: "z.string().nonempty()"
+    params: []
+    go_impl: standard_length_check
+    go_file: validate_primitive.go
+  - name: email
+    zod_api: "z.string().email()"
+    params: []
+    go_impl: builtin_regex
+    go_file: validate_primitive.go
+  - name: url
+    zod_api: "z.string().url()"
+    params: []
+    go_impl: builtin_net_url
+    go_file: validate_primitive.go
+  - name: uuid
+    zod_api: "z.string().uuid()"
+    params: []
+    go_impl: builtin_regex
+    go_file: validate_primitive.go
+  - name: regex
+    zod_api: "z.string().regex(/pattern/)"
+    params: [regex]
+    go_impl: constraint_regex
+    go_file: validate_primitive.go
+  - name: startsWith
+    zod_api: "z.string().startsWith(s)"
+    params: [value]
+    go_impl: standard_string_check
+    go_file: validate_primitive.go
+  - name: endsWith
+    zod_api: "z.string().endsWith(s)"
+    params: [value]
+    go_impl: standard_string_check
+    go_file: validate_primitive.go
+  - name: includes
+    zod_api: "z.string().includes(s)"
+    params: [value]
+    go_impl: standard_string_check
+    go_file: validate_primitive.go
+  - name: cuid
+    zod_api: "z.string().cuid()"
+    params: []
+    go_impl: builtin_regex
+    go_file: validate_primitive.go
+  - name: cuid2
+    zod_api: "z.string().cuid2()"
+    params: []
+    go_impl: builtin_regex
+    go_file: validate_primitive.go
+  - name: datetime
+    zod_api: "z.string().datetime()"
+    params: []
+    go_impl: builtin_date_parse
+    go_file: validate_primitive.go
+  - name: ip
+    zod_api: "z.string().ip()"
+    params: []
+    go_impl: builtin_net
+    go_file: validate_primitive.go
+
+# --- Number Constraints ---
+number_constraints:
+  - name: min
+    go_impl: standard_comparison
+  - name: max
+    go_impl: standard_comparison
+  - name: int
+    go_impl: standard_comparison
+  - name: finite
+    go_impl: standard_comparison
+  - name: positive
+    go_impl: standard_comparison
+  - name: negative
+    go_impl: standard_comparison
+  - name: nonnegative
+    go_impl: standard_comparison
+  - name: nonpositive
+    go_impl: standard_comparison
+  - name: multipleOf
+    go_impl: standard_comparison
+  - name: safe
+    go_impl: standard_comparison
+
+# --- Array/Set Constraints ---
+array_constraints:
+  - name: min
+  - name: max
+  - name: length
+  - name: nonempty
+
+# --- Modifier Names ---
+modifier_names:
+  - optional
+  - nullable
+  - nullish
+  - default
+  - catch
+  - brand
+  - readonly
+  - prefault
+
+# --- Sync Templates ---
+# Template files in .snow/sync/templates/:
+#   ts-constraint-string.txt    → add case in castConstraints()
+#   ts-constraint-number.txt    → add case in castConstraints()
+#   go-constraint-string-simple.txt → add validation case
+#   go-constraint-string-regex.txt  → add regex-based validation case
+#   go-constraint-number.txt    → add validation case
+#   go-constraint-array.txt     → add validation case
+#   go-new-primitive.txt        → add new primitive type
+#   go-new-node.txt             → add new IR node type
+#   test-go-constraint.txt      → add test case
+#   test-ts-constraint.txt      → add test case
