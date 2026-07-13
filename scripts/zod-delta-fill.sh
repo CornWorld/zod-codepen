@@ -142,32 +142,29 @@ PROMPT
 echo "🤖 Calling $ZEN_MODEL at $ZEN_BASE_URL ..." >&2
 echo "   Changelog size: $(wc -c < "$CHANGELOG") bytes" >&2
 
-# Build auth header if API key is set
-AUTH_HEADER=()
+# Build curl args
+CURL_ARGS=(-s -S --max-time 120 "$ZEN_BASE_URL/chat/completions" -H "Content-Type: application/json")
 if [[ -n "$ZEN_API_KEY" ]]; then
-    AUTH_HEADER=(-H "Authorization: Bearer $ZEN_API_KEY")
+    CURL_ARGS+=(-H "Authorization: Bearer $ZEN_API_KEY")
 fi
 
 # ---------------------------------------------------------------------------
 # Call the OpenAI-compatible API
 # ---------------------------------------------------------------------------
-RESPONSE=$(curl -s -S --max-time 120 \
-    "$ZEN_BASE_URL/chat/completions" \
-    -H "Content-Type: application/json" \
-    "${AUTH_HEADER[@]}" \
-    -d "$(jq -n \
-        --arg model "$ZEN_MODEL" \
-        --arg system "$SYSTEM_PROMPT" \
-        --arg user "$USER_PROMPT" \
-        '{
-            model: $model,
-            messages: [
-                { role: "system", content: $system },
-                { role: "user", content: $user }
-            ],
-            temperature: 0,
-            max_tokens: 16384
-        }')" 2>&1)
+PAYLOAD=$(jq -n \
+    --arg model "$ZEN_MODEL" \
+    --arg system "$SYSTEM_PROMPT" \
+    --arg user "$USER_PROMPT" \
+    '{
+        model: $model,
+        messages: [
+            { role: "system", content: $system },
+            { role: "user", content: $user }
+        ],
+        temperature: 0,
+        max_tokens: 16384
+    }')
+RESPONSE=$(curl "${CURL_ARGS[@]}" -d "$PAYLOAD" 2>&1)
 
 # ---------------------------------------------------------------------------
 # Extract the assistant's message
