@@ -1,0 +1,199 @@
+name: Sync Zod Baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_version:
+        description: 'Source Zod version (e.g., 3.22.0)'
+        required: true
+        type: string
+      to_version:
+        description: 'Target Zod version (e.g., 3.23.0)'
+        required: true
+        type: string
+      zen_api_key:
+        description: 'OpenCode Zen API key (https://opencode.ai/zen)'
+        required: false
+        type: string
+      ai_endpoint:
+        description: 'Custom AI API base URL (default: OpenCode Zen)'
+        required: false
+        type: string
+        default: 'https://opencode.ai/zen/v1'
+      ai_model:
+        description: 'AI model ID'
+        required: false
+        type: string
+        default: 'deepseek-v4-flash-free'
+      auto_pr:
+        description: 'Automatically create PR?'
+        required: false
+        type: boolean
+        default: true
+
+  # Also run on a schedule (weekly check)
+  schedule:
+    - cron: '0 8 * * 1' # Every Monday at 8am UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ------------------------------------------------------------------
+      # Phase 0: Detect changes
+      # ------------------------------------------------------------------
+      - name: Fetch Zod release changelog
+        id: detect
+        env:
+          FROM: ${{ inputs.from_version }}
+          TO: ${{ inputs.to_version }}
+        run: |
+          echo "🔍 Fetching Zod $FROM → $TO release notes..."
+
+          # Try to get the specific release by tag
+          RELEASE_JSON=$(curl -sf "https://api.github.com/repos/colinhacks/zod/releases/tags/v$TO" || echo '')
+          if [ -n "$RELEASE_JSON" ]; then
+            echo "$RELEASE_JSON" | jq -r '.body' > zod-changelog.md
+            echo "📄 Got release notes from GitHub API ($(wc -c < zod-changelog.md) bytes)"
+          else
+            # Fallback: try the releases list
+            RELEASES=$(curl -sf "https://api.github.com/repos/colinhacks/zod/releases?per_page=5" || echo '[]')
+            echo "$RELEASES" | jq -r '.[] | select(.tag_name == "v'$TO'") | .body' > zod-changelog.md
+            echo "📄 Got release notes (fallback, $(wc -c < zod-changelog.md) bytes)"
+          fi
+
+          if [ ! -s zod-changelog.md ]; then
+            echo "⚠️  Could not fetch changelog. Creating empty delta."
+            cat > delta.json <<EOF
+          {"from":"$FROM","to":"$TO","changes":[]}
+          EOF
+            echo "changes=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "changes_found=true" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------------------------------
+      # Phase 1: AI fills delta.json from changelog
+      # ------------------------------------------------------------------
+      - name: Fill delta.json with AI
+        if: steps.detect.outputs.changes_found == 'true' && inputs.zen_api_key != ''
+        env:
+          ZEN_API_KEY: ${{ inputs.zen_api_key }}
+          ZEN_BASE_URL: ${{ inputs.ai_endpoint || 'https://opencode.ai/zen/v1' }}
+          ZEN_MODEL: ${{ inputs.ai_model || 'deepseek-v4-flash-free' }}
+          FROM: ${{ inputs.from_version }}
+          TO: ${{ inputs.to_version }}
+        run: |
+          bash ./scripts/zod-delta-fill.sh \
+            --from "$FROM" --to "$TO" \
+            --changelog zod-changelog.md \
+            --output delta.json
+        continue-on-error: true
+
+      - name: Skip if no AI key (manual delta)
+        if: inputs.zen_api_key == ''
+        run: |
+          echo "⚠️  No ZEN_API_KEY provided. Skipping AI fill step."
+          echo "   To fill delta.json manually: edit delta.json in the PR"
+
+      # ------------------------------------------------------------------
+      # Phase 2: Generate sync plan (rule-based, no AI)
+      # ------------------------------------------------------------------
+      - name: Generate sync plan
+        id: plan
+        run: |
+          if [ ! -s delta.json ]; then
+            echo '{"from":"","to":"","changes":[]}' > delta.json
+          fi
+          cd pkgs/go
+          go run ./cmd/zod-sync/ plan --delta ../../delta.json > ../../sync-plan.json
+          cd ../..
+          echo "actions=$(jq '.actions | length' sync-plan.json)" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------------------------------
+      # Phase 3: Generate patches from templates
+      # ------------------------------------------------------------------
+      - name: Generate patches
+        run: |
+          cd pkgs/go
+          go run ./cmd/zod-sync/ generate --plan ../../sync-plan.json --out ../../.snow/sync/patches
+          cd ../..
+
+      # ------------------------------------------------------------------
+      # Phase 4: Apply patches and verify
+      # ------------------------------------------------------------------
+      - name: Apply patches
+        run: |
+          PATCHES=.snow/sync/patches/zod-*.patch
+          if compgen -G "$PATCHES" > /dev/null 2>&1; then
+            for patch in $PATCHES; do
+              echo "Applying: $patch"
+              git apply "$patch" || echo "⚠️  Some hunks failed — continuing"
+            done
+          else
+            echo "No patches to apply."
+          fi
+
+      - name: Verify Go module
+        run: |
+          cd pkgs/go
+          go build ./...
+          go vet ./...
+          go test -count=1 ./...
+
+      - name: Show diff summary
+        run: |
+          echo "## Changes made" >> "$GITHUB_STEP_SUMMARY"
+          echo '```diff' >> "$GITHUB_STEP_SUMMARY"
+          git diff --stat >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ------------------------------------------------------------------
+      # Create PR
+      # ------------------------------------------------------------------
+      - name: Create Pull Request
+        if: inputs.auto_pr && inputs.zen_api_key != ''
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "sync: Zod ${{ inputs.from_version }} → ${{ inputs.to_version }}"
+          title: "sync: Zod ${{ inputs.from_version }} → ${{ inputs.to_version }}"
+          body: |
+            ## Zod Sync: ${{ inputs.from_version }} → ${{ inputs.to_version }}
+
+            Auto-generated by the [zod-sync workflow](.github/workflows/zod-sync.yml).
+
+            ### Actions
+            ```
+            ${{ steps.plan.outputs.actions }} change(s) to sync
+            ```
+
+            ### Verification
+            - [ ] `go build ./...`
+            - [ ] `go vet ./...`
+            - [ ] `go test ./...`
+
+            ### Manual review needed
+            Check for actions marked `⚠️ MANUAL` in the diff.
+          branch: sync/zod-${{ inputs.to_version }}
+          delete-branch: true
+          labels: |
+            sync
+            automated
