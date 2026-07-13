@@ -251,6 +251,17 @@ func generatePlan(delta *Delta) *SyncPlan {
 					"name": ch.Name,
 				},
 			})
+		case "changed_api":
+			plan.Actions = append(plan.Actions, SyncAction{
+				File:     fmt.Sprintf("⚠️ CHANGED API: %s — verify Go validator still matches", ch.Name),
+				Template: "manual",
+				Variables: map[string]string{
+					"name":    ch.Name,
+					"zod_api": ch.ZodAPI,
+					"source":  ch.Source,
+					"msg":     fmt.Sprintf("Zod %s behavior changed: %s. Verify Go validator is still correct.", ch.Name, ch.Source),
+				},
+			})
 		}
 	}
 
