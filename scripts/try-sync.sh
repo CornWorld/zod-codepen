@@ -2,7 +2,10 @@
 # try-sync.sh — Quick local test of the zod-sync workflow with OpenCode Zen DS Flash.
 #
 # Usage:
-#   ZEN_API_KEY=sk-xxxx ./scripts/try-sync.sh --from 3.23.0 --to 3.24.0
+#   ./scripts/try-sync.sh --from 3.23.0 --to 3.24.0
+#
+# The free model (deepseek-v4-flash-free) works without an API key.
+# Optionally set ZEN_API_KEY if you have one.
 #
 # This simulates the full Phase 0→4 workflow locally:
 #   1. Fetch Zod changelog from GitHub
@@ -10,10 +13,6 @@
 #   3. Run zod-sync plan (rule-based)
 #   4. Run zod-sync generate (template fill)
 #   5. Show the generated patches
-#
-# Environment:
-#   ZEN_API_KEY     OpenCode Zen API key (get from https://opencode.ai/zen)
-#                    If not set: skip AI step and create empty delta
 
 set -euo pipefail
 
@@ -86,7 +85,7 @@ fi
 # ------------------------------------------------------------------
 # Step 2: AI fills delta.json
 # ------------------------------------------------------------------
-if [[ -n "$ZEN_API_KEY" && -s "$WORKDIR/changelog.md" ]]; then
+if [[ -s "$WORKDIR/changelog.md" ]]; then
     echo ""
     echo "🤖 Step 2: Calling DeepSeek V4 Flash to parse changelog..."
     bash ./scripts/zod-delta-fill.sh \
@@ -94,10 +93,8 @@ if [[ -n "$ZEN_API_KEY" && -s "$WORKDIR/changelog.md" ]]; then
         --changelog "$WORKDIR/changelog.md" \
         --output "$WORKDIR/delta.json" 2>&1 | sed 's/^/   /'
 elif [[ ! -f "$WORKDIR/delta.json" ]]; then
-    echo "   ⚠️  No ZEN_API_KEY and no changelog. Creating empty delta."
+    echo "   ⚠️  No changelog. Creating empty delta."
     echo "{\"from\":\"$FROM\",\"to\":\"$TO\",\"changes\":[]}" > "$WORKDIR/delta.json"
-else
-    echo "   ℹ️  ZEN_API_KEY not set. Skipping AI fill."
 fi
 
 # ------------------------------------------------------------------

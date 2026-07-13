@@ -4,36 +4,36 @@ on:
   workflow_dispatch:
     inputs:
       from_version:
-        description: 'Source Zod version (e.g., 3.22.0)'
+        description: "Source Zod version (e.g., 3.22.0)"
         required: true
         type: string
       to_version:
-        description: 'Target Zod version (e.g., 3.23.0)'
+        description: "Target Zod version (e.g., 3.23.0)"
         required: true
         type: string
       zen_api_key:
-        description: 'OpenCode Zen API key (https://opencode.ai/zen)'
+        description: "OpenCode Zen API key (https://opencode.ai/zen)"
         required: false
         type: string
       ai_endpoint:
-        description: 'Custom AI API base URL (default: OpenCode Zen)'
+        description: "Custom AI API base URL (default: OpenCode Zen)"
         required: false
         type: string
-        default: 'https://opencode.ai/zen/v1'
+        default: "https://opencode.ai/zen/v1"
       ai_model:
-        description: 'AI model ID'
+        description: "AI model ID"
         required: false
         type: string
-        default: 'deepseek-v4-flash-free'
+        default: "deepseek-v4-flash-free"
       auto_pr:
-        description: 'Automatically create PR?'
+        description: "Automatically create PR?"
         required: false
         type: boolean
         default: true
 
   # Also run on a schedule (weekly check)
   schedule:
-    - cron: '0 8 * * 1' # Every Monday at 8am UTC
+    - cron: "0 8 * * 1" # Every Monday at 8am UTC
 
 permissions:
   contents: write
@@ -49,12 +49,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: "1.23"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       # ------------------------------------------------------------------
       # Phase 0: Detect changes
@@ -94,9 +94,8 @@ jobs:
       # Phase 1: AI fills delta.json from changelog
       # ------------------------------------------------------------------
       - name: Fill delta.json with AI
-        if: steps.detect.outputs.changes_found == 'true' && inputs.zen_api_key != ''
+        if: steps.detect.outputs.changes_found == 'true'
         env:
-          ZEN_API_KEY: ${{ inputs.zen_api_key }}
           ZEN_BASE_URL: ${{ inputs.ai_endpoint || 'https://opencode.ai/zen/v1' }}
           ZEN_MODEL: ${{ inputs.ai_model || 'deepseek-v4-flash-free' }}
           FROM: ${{ inputs.from_version }}

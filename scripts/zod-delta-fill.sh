@@ -1,17 +1,17 @@
 #!/bin/bash
-# zod-delta-fill.sh — Call OpenCode Zen DeepSeek V4 Flash Free to parse a Zod
-# changelog into structured delta.json.
+# zod-delta-fill.sh — Call OpenCode Zen DeepSeek V4 Flash Free (no key needed!)
+# to parse a Zod changelog into structured delta.json.
 #
 # Usage:
-#   ZEN_API_KEY=sk-... ./zod-delta-fill.sh \
+#   ./zod-delta-fill.sh \
 #     --from 3.22.0 --to 3.23.0 \
 #     --changelog ./zod-changelog.md \
 #     --output delta.json
 #
-# Environment:
-#   ZEN_API_KEY        OpenCode Zen API key (required)
+# Environment (all optional):
 #   ZEN_BASE_URL       API base URL (default: https://opencode.ai/zen/v1)
 #   ZEN_MODEL          Model ID (default: deepseek-v4-flash-free)
+#   ZEN_API_KEY        API key (default: none — free model doesn't need one)
 #
 # Prerequisites: curl, jq
 
@@ -68,12 +68,6 @@ done
 if [[ -z "$FROM" || -z "$TO" || -z "$CHANGELOG" ]]; then
     echo "Error: --from, --to, and --changelog are required"
     usage
-fi
-
-if [[ -z "$ZEN_API_KEY" ]]; then
-    echo "Error: ZEN_API_KEY environment variable is required"
-    echo "Get your API key from https://opencode.ai/zen"
-    exit 1
 fi
 
 if [[ ! -f "$CHANGELOG" ]]; then
@@ -148,13 +142,19 @@ PROMPT
 echo "🤖 Calling $ZEN_MODEL at $ZEN_BASE_URL ..." >&2
 echo "   Changelog size: $(wc -c < "$CHANGELOG") bytes" >&2
 
+# Build auth header if API key is set
+AUTH_HEADER=()
+if [[ -n "$ZEN_API_KEY" ]]; then
+    AUTH_HEADER=(-H "Authorization: Bearer $ZEN_API_KEY")
+fi
+
 # ---------------------------------------------------------------------------
 # Call the OpenAI-compatible API
 # ---------------------------------------------------------------------------
 RESPONSE=$(curl -s -S --max-time 120 \
     "$ZEN_BASE_URL/chat/completions" \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $ZEN_API_KEY" \
+    "${AUTH_HEADER[@]}" \
     -d "$(jq -n \
         --arg model "$ZEN_MODEL" \
         --arg system "$SYSTEM_PROMPT" \
@@ -166,7 +166,7 @@ RESPONSE=$(curl -s -S --max-time 120 \
                 { role: "user", content: $user }
             ],
             temperature: 0,
-            max_tokens: 4096
+            max_tokens: 16384
         }')" 2>&1)
 
 # ---------------------------------------------------------------------------
