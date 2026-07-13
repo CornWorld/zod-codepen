@@ -1,0 +1,10 @@
+// In pkgs/core/src/cast/runtime.ts, inside castConstraints():
+// Add after the last {{.Primitive}} constraint handler.
+// File: pkgs/core/src/cast/runtime.ts
+// Location: castPrimitive() → castConstraints() switch block
+		case "{{.ZodCheckName}}":
+			{
+				target: "{{.ConstraintTarget}}",
+				name: "{{.ConstraintName}}",
+				params: {{.Params}},
+			},

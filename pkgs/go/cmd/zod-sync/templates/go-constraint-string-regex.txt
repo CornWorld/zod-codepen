@@ -1,0 +1,12 @@
+// In pkgs/go/validate_constraints.go, add a new regex variable.
+// Add after the existing regex variables (emailRegex, uuidRegex, etc.)
+// File: pkgs/go/validate_constraints.go
+var {{.varName}}Regex = regexp.MustCompile(` + "`" + `{{.Pattern}}` + "`" + `)
+
+// In pkgs/go/validate_primitive.go, inside validateStringConstraint():
+// Add before the "default:" case.
+	case "{{.ConstraintName}}":
+		if !{{.varName}}Regex.MatchString(s) {
+			vc.addError(path, "invalid_string",
+				"invalid {{.Description}}", "{{.ConstraintName}}", s)
+		}
