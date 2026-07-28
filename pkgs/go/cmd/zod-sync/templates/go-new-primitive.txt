@@ -1,0 +1,14 @@
+// In pkgs/go/validate_primitive.go, inside validatePrimitive():
+// Add a new case for {{.PrimitiveName}} type.
+// File: pkgs/go/validate_primitive.go
+	case "{{.PrimitiveName}}":
+		v, ok := input.({{.GoType}})
+		if !ok {
+			vc.addError(path, "invalid_type",
+				"expected {{.GoType}}, got {{.ReceivedType}}", "{{.PrimitiveName}}", input)
+			return
+		}
+		// Validate constraints
+		if node.Constraints != nil {
+			validate{{.ConstraintFunc}}(v, node.Constraints, path, vc)
+		}

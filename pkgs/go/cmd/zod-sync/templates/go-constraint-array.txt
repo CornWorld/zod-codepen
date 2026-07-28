@@ -1,0 +1,8 @@
+// In pkgs/go/validate_composite.go, inside validateArrayConstraint():
+// Add before the "default:" case at the end of the switch.
+// File: pkgs/go/validate_composite.go
+	case "{{.ConstraintName}}":
+		if !is{{.FuncName}}(arr) {
+			vc.addError(path, "invalid_array",
+				"invalid {{.Description}}", "{{.ConstraintName}}", arr)
+		}

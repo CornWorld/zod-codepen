@@ -1,0 +1,8 @@
+// In pkgs/go/validate_primitive.go, inside validateNumberConstraint():
+// Add before the "default:" case at the end of the switch.
+// File: pkgs/go/validate_primitive.go
+	case "{{.ConstraintName}}":
+		if !is{{.FuncName}}(n) {
+			vc.addError(path, "invalid_number",
+				"invalid {{.Description}}", "{{.ConstraintName}}", n)
+		}
