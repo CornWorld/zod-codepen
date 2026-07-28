@@ -1,0 +1,15 @@
+// In pkgs/go/validate_test.go, add test for {{.ConstraintName}} constraint.
+// Add inside the appropriate test function (TestValidate{{.Primitive}}Constraint).
+// File: pkgs/go/validate_test.go
+	{
+		name:     "{{.ConstraintName}} valid",
+		schema:   &schema.{{.SchemaType}}{Kind: "primitive", {{.PrimitiveField}}: "{{.PrimitiveName}}", Constraints: &schema.ConstraintNode{Target: "{{.PrimitiveName}}", Constraints: []schema.Constraint{{Name: "{{.ConstraintName}}", Params: {{.ValidParams}}}}}},
+		input:    {{.ValidInput}},
+		wantErr:  false,
+	},
+	{
+		name:     "{{.ConstraintName}} invalid",
+		schema:   &schema.{{.SchemaType}}{Kind: "primitive", {{.PrimitiveField}}: "{{.PrimitiveName}}", Constraints: &schema.ConstraintNode{Target: "{{.PrimitiveName}}", Constraints: []schema.Constraint{{Name: "{{.ConstraintName}}", Params: {{.InvalidParams}}}}}},
+		input:    {{.InvalidInput}},
+		wantErr:  true,
+	},

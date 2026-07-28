@@ -1,0 +1,13 @@
+// In pkgs/go/validate.go, inside validate() switch:
+// Add a new case for {{.NodeKind}} node type.
+// File: pkgs/go/validate.go
+	case "{{.NodeKind}}":
+		{{.ValidationCode}}
+
+// In pkgs/go/ast.go, add the struct definition:
+// {{.NodeKind}}Node represents {{.Description}}.
+type {{.NodeKind}}Node struct {
+	{{.Fields}}
+}
+
+func (n *{{.NodeKind}}Node) Kind() string { return "{{.NodeKind}}" }

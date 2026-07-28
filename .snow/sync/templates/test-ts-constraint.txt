@@ -1,0 +1,15 @@
+// In pkgs/core/test/ir-json.test.ts, add test for {{.ConstraintName}} constraint.
+// Add inside the appropriate describe block.
+// File: pkgs/core/test/ir-json.test.ts
+	it("should handle z.string().{{.ConstraintName}}()", () => {
+		const schema = z.string().{{.ConstraintName}}({{.TestArgs}});
+		const ir = castFromZod(schema);
+		const json = irToJson(ir);
+		expect(json).toMatchObject({
+			kind: "primitive",
+			name: "string",
+			constraints: [
+				{ target: "string", name: "{{.ConstraintName}}", params: {{.ExpectedParams}} }
+			]
+		});
+	});
