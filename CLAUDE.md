@@ -1,6 +1,6 @@
 # Zod Codepen - 项目架构文档
 
-> **最后更新**：2026-07-05
+> **最后更新**：2026-07-29
 > **版本**：1.0.2
 > **自动生成**：本文档由 Claude Code 自动生成
 
@@ -121,13 +121,15 @@ graph TD
     A --> C["pkgs/zod-v3"];
     A --> D["pkgs/zod-v4"];
     A --> E["pkgs/vite-plugin"];
-    A --> F["docs"];
+    A --> F["pkgs/go"];
+    A --> G["docs"];
 
     click B "./pkgs/core/CLAUDE.md" "查看 core 模块文档"
     click C "./pkgs/zod-v3/CLAUDE.md" "查看 zod-v3 模块文档"
     click D "./pkgs/zod-v4/CLAUDE.md" "查看 zod-v4 模块文档"
     click E "./pkgs/vite-plugin/CLAUDE.md" "查看 vite-plugin 模块文档"
-    click F "./docs/CLAUDE.md" "查看 docs 模块文档"
+    click F "./pkgs/go/CLAUDE.md" "查看 go 模块文档"
+    click G "./docs/CLAUDE.md" "查看 docs 模块文档"
 ```
 
 ---
@@ -139,7 +141,8 @@ graph TD
 | [pkgs/core](./pkgs/core/CLAUDE.md)               | 版本无关的序列化核心引擎，IR 节点定义、codegen、双 cast 路径（运行时 + 静态 AST） | TypeScript     | `src/index.ts`          | `@zod-codepen/core@1.0.1`        | Vitest（4 个测试文件，129 个测试）           |
 | [pkgs/zod-v3](./pkgs/zod-v3/CLAUDE.md)           | Zod v3 适配器，封装 v3 内部结构访问（`_def.typeName`）                            | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v3@1.0.1`      | Vitest（10 个测试文件，155 个测试）          |
 | [pkgs/zod-v4](./pkgs/zod-v4/CLAUDE.md)           | Zod v4 适配器，支持所有 v4 变体（`_zod.def.type`）                                | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v4@1.0.1`      | Vitest（9 个测试文件，53 个测试 + 4 个跳过） |
-| [pkgs/vite-plugin](./pkgs/vite-plugin/CLAUDE.md) | Vite 构建插件，运行时 + 静态两种 Schema 解耦模式                                  | TypeScript     | `src/index.ts`          | `@zod-codepen/vite-plugin@1.0.1` | Vitest（6 个测试文件，64 个测试）            |
+| [pkgs/vite-plugin](./pkgs/vite-plugin/CLAUDE.md) | Vite 构建插件，运行时 + 静态两种 Schema 解耦模式                                  | TypeScript     | `src/index.ts`          | `@zod-codepen/vite-plugin@1.0.1` | Vitest（6 个测试文件，67 个测试）            |
+| [pkgs/go](./pkgs/go/CLAUDE.md)                   | Go 原生 Zod schema 校验器，读取 TS 端导出的 JSON AST 执行校验                     | Go             | `go.mod`                | — (独立 Go module)               | `go test`（94 个测试）                       |
 | [docs](./docs/CLAUDE.md)                         | VitePress 文档站点，包含指南、API 参考、Playground                                | Markdown + Vue | `.vitepress/config.mts` | `@zod-codepen/docs@0.0.2`        | 无                                           |
 
 详细模块文档请点击表格中的模块路径或上方结构图中的节点。
