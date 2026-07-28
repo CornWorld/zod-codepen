@@ -8,3 +8,6 @@ coverage/
 *.tsbuildinfo
 .pnpm-store/
 .reasonix/
+
+# Go binaries (built from pkgs/go/cmd/*/)
+pkgs/go/zod-sync

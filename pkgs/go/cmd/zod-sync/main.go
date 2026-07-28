@@ -25,6 +25,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,6 +88,18 @@ var goConstraintStringRegexTmpl string
 //go:embed templates/sync-constraint-prompt.md
 var syncConstraintPromptTmpl string
 
+//go:embed templates/go-constraint-number.txt
+var goConstraintNumberTmpl string
+
+//go:embed templates/go-constraint-array.txt
+var goConstraintArrayTmpl string
+
+//go:embed templates/go-new-primitive.txt
+var goNewPrimitiveTmpl string
+
+//go:embed templates/go-new-node.txt
+var goNewNodeTmpl string
+
 func loadTemplate(name string) *template.Template {
 	var src string
 	switch name {
@@ -97,6 +111,14 @@ func loadTemplate(name string) *template.Template {
 		src = goConstraintStringRegexTmpl
 	case "sync-constraint-prompt":
 		src = syncConstraintPromptTmpl
+	case "go-constraint-number":
+		src = goConstraintNumberTmpl
+	case "go-constraint-array":
+		src = goConstraintArrayTmpl
+	case "go-new-primitive":
+		src = goNewPrimitiveTmpl
+	case "go-new-node":
+		src = goNewNodeTmpl
 	default:
 		return nil
 	}
@@ -157,26 +179,37 @@ func cmdDetect(args []string) {
 	}
 
 	fmt.Fprintf(os.Stderr, "🔍 Detecting changes: zod %s → %s\n", *from, *to)
-	fmt.Fprintln(os.Stderr, "   (This would fetch GitHub releases API + npm diff)")
 
-	// In a full implementation, this would:
-	// 1. Fetch https://api.github.com/repos/colinhacks/zod/releases
-	// 2. Find the release notes for the target version
-	// 3. Parse markdown changelog for new features
-	// 4. Compare npm tarballs for API surface changes
-	//
-	// For now, stub the output and instruct the user.
+	// Fetch Zod releases from GitHub API
+	releases, err := fetchZodReleases()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  GitHub API unavailable (%v), using stub\n", err)
+		emitStubDelta(*from, *to)
+		return
+	}
+
+	// Find relevant release notes
+	var releaseNotes string
+	for _, r := range releases {
+		if r.TagName == "v"+*to || r.TagName == *to {
+			releaseNotes = r.Body
+			break
+		}
+	}
+
+	changes := parseChangelog(releaseNotes, *from, *to)
 	delta := Delta{
 		From:    *from,
 		To:      *to,
-		Changes: []DeltaChange{},
+		Changes: changes,
 	}
 
 	out, _ := json.MarshalIndent(delta, "", "  ")
 	fmt.Println(string(out))
-	fmt.Fprintf(os.Stderr, "\n💡 To fill the delta, paste the Zod changelog into the AI prompt:\n")
-	fmt.Fprintf(os.Stderr, "   zod-sync prompt --delta /dev/stdin --from %s --to %s\n", *from, *to)
-	fmt.Fprintf(os.Stderr, "   Then paste the output into the AI chat.\n")
+	fmt.Fprintf(os.Stderr, "\n✅ Detected %d change(s)\n", len(changes))
+	if len(changes) == 0 {
+		fmt.Fprintf(os.Stderr, "💡 Use zod-sync prompt --delta delta.json to generate an AI prompt for manual analysis.\n")
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -496,8 +529,150 @@ func toCamelCase(s string) string {
 	result = matchAllCap.ReplaceAllString(result, "${1}_${2}")
 	return strings.ToLower(result)
 }
-
 func toPascalCase(s string) string {
 	result := strings.ToUpper(s[:1]) + s[1:]
 	return result
+}
+
+// ---------------------------------------------------------------------------
+// GitHub API types & fetch
+// ---------------------------------------------------------------------------
+
+type githubRelease struct {
+	TagName string `json:"tag_name"`
+	Body    string `json:"body"`
+}
+
+func fetchZodReleases() ([]githubRelease, error) {
+	url := "https://api.github.com/repos/colinhacks/zod/releases?per_page=10"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("User-Agent", "zod-codepen-sync/1.0")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var releases []githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		return nil, fmt.Errorf("JSON decode failed: %w", err)
+	}
+	return releases, nil
+}
+
+// parseChangelog extracts structured changes from Zod release notes.
+// This is a best-effort parser that looks for common patterns.
+func parseChangelog(notes, from, to string) []DeltaChange {
+	changes := make([]DeltaChange, 0)
+
+	if notes == "" {
+		return changes
+	}
+
+	// Pattern 1: "Add z.string().xxx()" or "z.string().xxx() method"
+	stringPattern := regexp.MustCompile(`z\.string\(\)\.(\w+)\(\)`)
+	for _, match := range stringPattern.FindAllStringSubmatch(notes, -1) {
+		changes = append(changes, DeltaChange{
+			Type:      "new_constraint",
+			Primitive: "string",
+			Name:      match[1],
+			ZodAPI:    "z.string()." + match[1] + "()",
+			Source:    "detected from release notes",
+		})
+	}
+
+	// Pattern 2: "Add z.number().xxx()"
+	numberPattern := regexp.MustCompile(`z\.number\(\)\.(\w+)\(\)`)
+	for _, match := range numberPattern.FindAllStringSubmatch(notes, -1) {
+		changes = append(changes, DeltaChange{
+			Type:      "new_constraint",
+			Primitive: "number",
+			Name:      match[1],
+			ZodAPI:    "z.number()." + match[1] + "()",
+			Source:    "detected from release notes",
+		})
+	}
+
+	// Pattern 3: "Add z.xxx()" — new top-level type
+	typePattern := regexp.MustCompile(`\bz\.(\w+)\(\)`)
+	for _, match := range typePattern.FindAllStringSubmatch(notes, -1) {
+		name := match[1]
+		// Skip common base types and constraints
+		if isCoreType(name) {
+			continue
+		}
+		// Check if it looks like a new type (not a method chain)
+		if !isConstraintName(name) {
+			changes = append(changes, DeltaChange{
+				Type:      "new_type",
+				Name:      "Zod" + strings.ToUpper(name[:1]) + name[1:],
+				ZodAPI:    "z." + name + "()",
+				Source:    "detected from release notes",
+			})
+		}
+	}
+
+	return changes
+}
+
+var coreTypes = map[string]bool{
+	"string": true, "number": true, "boolean": true, "bigint": true,
+	"date": true, "symbol": true, "undefined": true, "null": true,
+	"void": true, "any": true, "unknown": true, "never": true,
+	"nan": true, "object": true, "array": true, "tuple": true,
+	"record": true, "map": true, "set": true, "union": true,
+	"discriminatedUnion": true, "intersection": true, "enum": true,
+	"literal": true, "nativeEnum": true, "function": true, "lazy": true,
+	"promise": true, "transform": true, "effects": true, "instanceof": true,
+	"custom": true, "brand": true, "pipeline": true,
+	"min": true, "max": true, "length": true,
+	"email": true, "url": true, "uuid": true, "cuid": true,
+	"cuid2": true, "datetime": true, "ip": true, "emoji": true,
+	"regex": true, "includes": true, "startsWith": true, "endsWith": true,
+	"trim": true, "toLowerCase": true, "toUpperCase": true,
+	"int": true, "finite": true, "safe": true, "positive": true,
+	"negative": true, "nonnegative": true, "nonpositive": true,
+	"multipleOf": true, "optional": true, "nullable": true,
+	"nullish": true, "default": true, "catch": true, "readonly": true,
+}
+
+func isCoreType(name string) bool {
+	return coreTypes[name]
+}
+
+func isConstraintName(name string) bool {
+	constraints := map[string]bool{
+		"min": true, "max": true, "length": true, "email": true,
+		"url": true, "uuid": true, "cuid": true, "cuid2": true,
+		"datetime": true, "ip": true, "emoji": true, "regex": true,
+		"includes": true, "startsWith": true, "endsWith": true,
+		"trim": true, "int": true, "finite": true, "safe": true,
+		"positive": true, "negative": true, "nonnegative": true,
+		"nonpositive": true, "multipleOf": true, "optional": true,
+		"nullable": true, "nullish": true, "default": true,
+	}
+	return constraints[name]
+}
+
+func emitStubDelta(from, to string) {
+	delta := Delta{
+		From:    from,
+		To:      to,
+		Changes: []DeltaChange{},
+	}
+	out, _ := json.MarshalIndent(delta, "", "  ")
+	fmt.Println(string(out))
+	fmt.Fprintf(os.Stderr, "\n💡 To fill the delta, paste the Zod changelog into the AI prompt:\n")
+	fmt.Fprintf(os.Stderr, "   zod-sync prompt --delta /dev/stdin --from %s --to %s\n", from, to)
+	fmt.Fprintf(os.Stderr, "   Then paste the output into the AI chat.\n")
 }

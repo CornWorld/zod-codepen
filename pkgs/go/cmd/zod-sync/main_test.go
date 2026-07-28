@@ -438,3 +438,124 @@ func TestToCamelCase(t *testing.T) {
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// New template tests: number + array constraints
+// ---------------------------------------------------------------------------
+
+func TestTemplate_GoConstraintNumber(t *testing.T) {
+	tmpl := loadTemplate("go-constraint-number")
+	if tmpl == nil {
+		t.Fatal("template not found")
+	}
+
+	var buf strings.Builder
+	err := tmpl.Execute(&buf, map[string]string{
+		"ConstraintName": "multipleOf",
+		"FuncName":       "multipleOf",
+		"Description":    "multiple of",
+	})
+	if err != nil {
+		t.Fatalf("template execute failed: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "multipleOf") {
+		t.Error("output should contain 'multipleOf'")
+	}
+	if !strings.Contains(out, "invalid_number") {
+		t.Error("output should contain 'invalid_number'")
+	}
+	if !strings.Contains(out, "validateNumberConstraint") {
+		t.Error("output should reference validateNumberConstraint")
+	}
+}
+
+func TestTemplate_GoConstraintArray(t *testing.T) {
+	tmpl := loadTemplate("go-constraint-array")
+	if tmpl == nil {
+		t.Fatal("template not found")
+	}
+
+	var buf strings.Builder
+	err := tmpl.Execute(&buf, map[string]string{
+		"ConstraintName": "nonempty",
+		"FuncName":       "nonempty",
+		"Description":    "non-empty",
+	})
+	if err != nil {
+		t.Fatalf("template execute failed: %v", err)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "nonempty") {
+		t.Error("output should contain 'nonempty'")
+	}
+	if !strings.Contains(out, "invalid_array") {
+		t.Error("output should contain 'invalid_array'")
+	}
+	if !strings.Contains(out, "validateArrayConstraint") {
+		t.Error("output should reference validateArrayConstraint")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ParseChangelog tests
+// ---------------------------------------------------------------------------
+
+func TestParseChangelog_EmptyNotes(t *testing.T) {
+	changes := parseChangelog("", "3.22.0", "3.23.0")
+	if len(changes) != 0 {
+		t.Errorf("expected 0 changes, got %d", len(changes))
+	}
+}
+
+func TestParseChangelog_StringConstraint(t *testing.T) {
+	notes := `## New Features
+
+- Added z.string().emoji() to validate emoji characters
+- z.string().hexColor() now available`
+	changes := parseChangelog(notes, "3.22.0", "3.23.0")
+	if len(changes) < 2 {
+		t.Fatalf("expected at least 2 changes, got %d", len(changes))
+	}
+	found := false
+	for _, c := range changes {
+		if c.Name == "emoji" && c.Primitive == "string" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'emoji' string constraint to be detected")
+	}
+}
+
+func TestParseChangelog_NumberConstraint(t *testing.T) {
+	notes := `## Changes
+
+- Add z.number().multipleOf() to check if a number is a multiple of another`
+	changes := parseChangelog(notes, "3.22.0", "3.23.0")
+	found := false
+	for _, c := range changes {
+		if c.Name == "multipleOf" && c.Primitive == "number" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'multipleOf' number constraint to be detected")
+	}
+}
+
+func TestParseChangelog_IgnoresCoreTypes(t *testing.T) {
+	// Ensure core types like z.string(), z.number() don't generate noise
+	notes := `z.string() basic type remains unchanged
+z.number() updates`
+	changes := parseChangelog(notes, "3.22.0", "3.23.0")
+	for _, c := range changes {
+		if c.Type == "new_type" && (c.Name == "ZodString" || c.Name == "ZodNumber") {
+			t.Errorf("should not detect core type: %s", c.Name)
+		}
+	}
+}
