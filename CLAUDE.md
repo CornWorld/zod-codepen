@@ -2,36 +2,10 @@
 
 > **最后更新**：2026-07-29
 > **版本**：1.0.2
-> **自动生成**：本文档由 Claude Code 自动生成
 
-## 变更记录 (Changelog)
+Zod Codepen — 将 Zod Schema 序列化为纯 TypeScript/Go 校验器。支持 Zod v3/v4 双版本、静态 AST 提取、Vite 构建时解耦、Go 原生校验。
 
-### 2026-07-05
-
-- 重构为 IR（中间表示）架构：Zod Schema → cast → IRNode → codegen → Code String
-- 新增静态 AST 提取管线（castFromAst / castAllFromAst）
-- 新增跨文件 schema 解析（ModuleResolver）
-- 序列化器瘦身：1181 行 → 142 行
-- 测试增强：core 0→129 / vite-plugin 0→64，全仓 401 测试全绿
-
-### 2025-12-11 11:00:36
-
-- 全面更新架构文档，增强模块结构图与导航体验
-- 新增模块级文档面包屑导航，方便快速跳转
-- 新增 Mermaid 交互式模块结构图，支持点击跳转
-- 完善测试覆盖率分析（v3 10 个测试套件，v4 9 个测试套件）
-- 新增数字格式化优化文档说明
-- 补充 Vite 插件架构与使用场景
-
-### 2025-12-10 22:03:57
-
-- 初始化架构文档
-- 完成全仓扫描与模块结构分析
-- 生成根级与各模块级文档
-
----
-
-## 项目愿景
+## 模块索引
 
 Zod Codepen 是一个将 Zod Schema 对象序列化为纯 TypeScript/JavaScript 代码字符串的工具库。主要应用场景包括：
 
@@ -57,59 +31,28 @@ Zod Codepen 是一个将 Zod Schema 对象序列化为纯 TypeScript/JavaScript 
 
 ## 架构
 
-本项目采用 **IR（中间表示）架构**，将序列化过程分为两个阶段：
+**IR 管道**（版本无关的中间表示）：
 
 ```
-Zod Schema → cast/ (caster) → IRNode → ir/printer/codegen → Code String
+Zod Schema → cast (runtime/static) → IRNode → codegen → Code String
+                                          ↓ (JSON AST)
+                                     Go 原生校验器
 ```
 
-两条 cast 路径：
+两条 cast 路径：`castFromZod()`（运行时 Zod 对象）和 `castFromAst()`（静态 TS 源码）。
 
-- **castFromZod()**：运行时路径，需要实际 Zod 对象（`pkgs/core/src/cast/runtime.ts`）
-- **castFromAst()**：静态 AST 路径，解析 TypeScript 源码文本（`pkgs/core/src/cast/ast.ts`）
+**Monorepo 结构**（pnpm workspace）：
 
-核心模块：
+| 目录                | 职责                                     |
+| ------------------- | ---------------------------------------- |
+| `pkgs/core/`        | 序列化引擎核心（IR 节点、cast、codegen） |
+| `pkgs/zod-v3/`      | Zod v3 适配器                            |
+| `pkgs/zod-v4/`      | Zod v4 适配器                            |
+| `pkgs/vite-plugin/` | Vite 构建插件（Schema 解耦）             |
+| `pkgs/go/`          | Go 原生校验器（JSON AST → Validate）     |
+| `docs/`             | VitePress 文档站点                       |
 
-- `pkgs/core/src/ir/nodes.ts` — 21 种 IR 节点类型定义
-- `pkgs/core/src/ir/printer/codegen.ts` — IR → 代码字符串（纯函数，无 Zod 依赖）
-- `pkgs/core/src/cast/` — 两种 cast 实现
-- `pkgs/core/src/serializer.ts` — 序列化器薄壳（仅 142 行，路由到 IR 管道）
-
-## 架构总览
-
-本项目采用 **Monorepo** 结构（pnpm workspace），分为核心引擎与版本适配器：
-
-```
-zod-codepen/
-├── pkgs/                    # 核心代码包
-│   ├── core/                # 版本无关的序列化引擎
-│   ├── zod-v3/              # Zod v3 适配器
-│   ├── zod-v4/              # Zod v4 适配器（含 mini/core 变体）
-│   └── vite-plugin/         # Vite 插件（Schema 解耦）
-├── docs/                    # VitePress 文档站点
-│   ├── .vitepress/          # 配置与组件
-│   ├── guide/               # 使用指南
-│   ├── api/                 # API 参考
-│   └── playground.md        # 在线 Playground
-├── package.json             # 根工作空间配置
-├── pnpm-workspace.yaml      # pnpm workspace 定义
-├── tsconfig.base.json       # 共享 TypeScript 配置
-├── .github/workflows/       # CI/CD（Cloudflare Pages 部署）
-├── LICENSE                  # MPL-2.0
-├── README.md                # 英文说明
-├── README.zh_CN.md          # 中文说明
-└── CONTRIBUTING.md          # 贡献指南
-```
-
-**技术栈**：
-
-- **语言**：TypeScript 5.7+
-- **包管理**：pnpm 10+
-- **构建**：tsc（原生 TypeScript 编译器）
-- **测试**：Vitest 2.1+
-- **文档**：VitePress 1.5+
-- **部署**：Cloudflare Pages（Wrangler）
-- **代码规范**：ESLint 9+ + Prettier 3+
+**技术栈**：TypeScript 5.7+ / Go 1.22+ / pnpm 10+ / Vitest 2.1+ / VitePress 1.5+
 
 ---
 

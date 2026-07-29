@@ -18,10 +18,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GO_TOOL_DIR="$PROJECT_ROOT/pkgs/go/cmd/zod-sync"
 
-# Build once, cache the binary
-BUILD_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/zod-codepen"
-mkdir -p "$BUILD_CACHE"
-BINARY="$BUILD_CACHE/zod-sync"
+# Build once, place into dist/
+BINARY="$PROJECT_ROOT/dist/zod-sync"
 
 build_tool() {
     if [ ! -x "$BINARY" ] || [ "$BINARY" -ot "$GO_TOOL_DIR/main.go" ]; then
