@@ -184,37 +184,11 @@ export class ModuleResolver {
   resolveIdentifier(
     name: string,
     fromFile: string,
-    fromSource: ts.SourceFile,
+    _fromSource: ts.SourceFile,
     baseOpts: AstCastOptions = {},
   ): IRNode | undefined {
-    // 1. Local lookup: is there a top-level `const name = ...` in this file?
-    const localExpr = findLocalDefinition(fromSource, name);
-    if (localExpr) {
-      const optsWithSf: AstCastOptions = {
-        ...baseOpts,
-        sourceFile: fromSource,
-        fileName: fromFile,
-      };
-      return castFromExpressionExported(localExpr, optsWithSf);
-    }
-
-    // 2. Cross-file: find an `import { name } from './y'` and resolve.
-    const importInfo = findImportByName(fromSource, name);
-    if (!importInfo) return undefined;
-    const r = this.resolveSchema(
-      importInfo.specifier,
-      importInfo.localName ?? name,
-      fromFile,
-      baseOpts,
-    );
-    if (!r) return undefined;
-    // Circular cycle: re-throw so the outermost resolveSchema surfaces it.
-    if ((r as { kind: string }).kind === "circular") {
-      throw new CircularResolutionError(
-        `${this.resolveModulePath(importInfo.specifier, fromFile)}::${importInfo.localName ?? name}`,
-      );
-    }
-    return r as IRNode;
+    // Delegate to lookupIdentifierIR which shares the same logic (local + cross-file).
+    return this.lookupIdentifierIR(name, fromFile, baseOpts);
   }
 
   private lookupIdentifierIR(
@@ -247,7 +221,9 @@ export class ModuleResolver {
     if (!r) return undefined;
     if ((r as { kind: string }).kind === "circular") {
       throw new CircularResolutionError(
-        `${this.resolveModulePath(importInfo.specifier, fromFile)}::${importInfo.localName ?? name}`,
+        `${this.resolveModulePath(importInfo.specifier, fromFile)}::${
+          importInfo.localName ?? name
+        }`,
       );
     }
     return r as IRNode;
@@ -325,7 +301,7 @@ function isRelativeSpecifier(spec: string): boolean {
 
 function candidatePaths(specifier: string): string[] {
   // Drop trailing extension if present.
-  const base = specifier.replace(/\.(ts|tsx|d\.ts|js|jsx|mjs|cjs)$/, "");
+  const base = specifier.replace(/\\.(d\\.ts|tsx|ts|jsx|js|mjs|cjs)$/, "");
   return [
     `${base}.ts`,
     `${base}.tsx`,

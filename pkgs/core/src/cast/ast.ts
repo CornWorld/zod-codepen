@@ -350,48 +350,78 @@ function castZodChain(
 
   // Composite dispatch — these may have constraints (array/set) but most
   // don't have modifiers/constraints attached at this level.
+  let result: IRNode;
   switch (first) {
     case "literal":
-      return castLiteral(args);
+      result = castLiteral(args);
+      break;
     case "enum":
-      return castEnum(args);
+      result = castEnum(args);
+      break;
     case "nativeEnum":
-      return castNativeEnum(args);
+      result = castNativeEnum(args);
+      break;
     case "array":
-      return castArrayChain(path, args, opts, fileName);
+      result = castArrayChain(path, args, opts, fileName);
+      break;
     case "set":
-      return castSetChain(path, args, opts, fileName);
+      result = castSetChain(path, args, opts, fileName);
+      break;
     case "object":
-      return castObjectChain(path, args, opts, fileName);
+      result = castObjectChain(path, args, opts, fileName);
+      break;
     case "tuple":
-      return castTuple(args, opts, fileName);
+      result = castTuple(args, opts, fileName);
+      break;
     case "record":
-      return castRecord(args, opts, fileName);
+      result = castRecord(args, opts, fileName);
+      break;
     case "map":
-      return castMap(args, opts, fileName);
+      result = castMap(args, opts, fileName);
+      break;
     case "union":
-      return castUnion(args, opts, fileName);
+      result = castUnion(args, opts, fileName);
+      break;
     case "discriminatedUnion":
-      return castDiscriminatedUnion(args, opts, fileName);
+      result = castDiscriminatedUnion(args, opts, fileName);
+      break;
     case "intersection":
-      return castIntersection(args, opts, fileName);
+      result = castIntersection(args, opts, fileName);
+      break;
     case "lazy":
-      return castLazy(args, opts, fileName);
+      result = castLazy(args, opts, fileName);
+      break;
     case "promise":
-      return castPromise(args, opts, fileName);
+      result = castPromise(args, opts, fileName);
+      break;
     case "function":
-      return castZodFunction(args, opts, fileName);
+      result = castZodFunction(args, opts, fileName);
+      break;
     case "preprocess":
-      return castPreprocess(args, opts, fileName);
+      result = castPreprocess(args, opts, fileName);
+      break;
     case "transform":
-      return castStandaloneTransform(args, opts, fileName);
+      result = castStandaloneTransform(args, opts, fileName);
+      break;
     case "refine":
-      return castStandaloneRefine(args, opts, fileName);
+      result = castStandaloneRefine(args, opts, fileName);
+      break;
     case "pipe":
-      return castPipe(args, opts, fileName);
+      result = castPipe(args, opts, fileName);
+      break;
     default:
       return rawNodeAt(chain, opts, `unknown-zod-method:${first}`);
   }
+
+  // Post-processing: check for modifiers in the tail of the chain.
+  // For composite types like z.object({...}).optional(), the modifier
+  // entries at path[2..] are not consumed by the individual casters,
+  // so we must collect them here and wrap the result in a ModifiedNode.
+  const tailModifiers = collectModifiers(path.slice(2), args.slice(2));
+  if (tailModifiers.length > 0) {
+    return { kind: "modified", inner: result, modifiers: tailModifiers };
+  }
+  return result;
 }
 
 // ============================================================
@@ -910,6 +940,10 @@ function castObjectChain(
     else if (stepName === "passthrough") unknownMode = "passthrough";
     else if (stepName === "catchall" && args[i] && args[i].length > 0) {
       catchall = castFromExpression(args[i][0], opts, fileName);
+    } else {
+      console.warn(
+        `[cast-ast] ignoring unknown object-chain step '${stepName}' at index ${i}`,
+      );
     }
   }
 
@@ -935,9 +969,19 @@ function castObjectFields(
       fields.push({ key: f.key, value: ir });
     } else if (f.kind === "shorthand") {
       // { x } === { x: x } — x is an identifier reference.
+      // Try resolver first if available.
+      let resolved: IRNode | undefined;
+      if (opts.resolver?.resolveIdentifier && opts.sourceFile) {
+        resolved = opts.resolver.resolveIdentifier(
+          f.key,
+          fileName,
+          opts.sourceFile,
+          opts,
+        );
+      }
       fields.push({
         key: f.key,
-        value: {
+        value: resolved ?? {
           kind: "raw",
           code: "z.any()",
           reason: `shorthand-ref:${f.key}`,

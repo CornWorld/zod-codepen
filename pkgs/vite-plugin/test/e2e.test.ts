@@ -43,7 +43,7 @@ describe("E2E: generateSchemas", () => {
     const content = fs.readFileSync(outputPath, "utf-8");
 
     // Should have import
-    expect(content).toContain("import { z } from 'zod';");
+    expect(content).toContain("import { z } from 'zod/v4';");
 
     // Should include User schema
     expect(content).toContain("export const User =");

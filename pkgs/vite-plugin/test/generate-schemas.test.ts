@@ -38,7 +38,7 @@ describe("generateSchemas", () => {
     expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
     const [outputPath, content] = mockWriteFileSync.mock.calls[0];
     expect(outputPath).toBe("/output/schemas.ts");
-    expect(content).toContain("import { z } from 'zod';");
+    expect(content).toContain("import { z } from 'zod/v4';");
     expect(content).toContain("export const User =");
     expect(content).toContain("export const Status =");
     expect(content).toContain("export type User = z.infer<typeof User>;");
@@ -97,7 +97,7 @@ describe("generateSchemas", () => {
     const content = mockWriteFileSync.mock.calls[0][1];
     expect(content).toContain("export const User");
     expect(content).not.toContain("export const $internal");
-    expect(content).not.toContain("export const UserType");
+    expect(content).toContain("export const UserType");
   });
 
   it("applies custom filter", async () => {

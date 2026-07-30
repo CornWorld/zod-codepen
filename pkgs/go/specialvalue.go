@@ -105,9 +105,9 @@ func tryDecodeSpecialObject(m map[string]json.RawMessage) (any, bool) {
 			if _, ok := bi.SetString(s, 10); ok {
 				return bi, true
 			}
-			return s, true
+			return nil, false
 		}
-		return s, true
+		return nil, false
 	}
 
 	if raw, ok := m["_regex"]; ok {
@@ -163,6 +163,25 @@ type UnsupportedValue struct {
 	Type string
 }
 
+// findLastUnescapedSlash finds the last '/' character in s that is not escaped
+// by a preceding backslash. Returns -1 if no unescaped slash is found.
+func findLastUnescapedSlash(s string) int {
+	for i := len(s) - 1; i >= 1; i-- {
+		if s[i] != '/' {
+			continue
+		}
+		// Count consecutive backslashes before this position
+		backslashes := 0
+		for j := i - 1; j >= 0 && s[j] == '\\'; j-- {
+			backslashes++
+		}
+		if backslashes%2 == 0 {
+			return i // Even number of backslashes → this slash is not escaped
+		}
+	}
+	return -1
+}
+
 // parseRegexStr parses a regex string in the form /pattern/flags.
 // Flags: i (case-insensitive), m (multiline), s (dotall), plus JS-only flags
 // (g, u, y) which are ignored in Go.
@@ -173,7 +192,7 @@ func parseRegexStr(s string) (*regexp.Regexp, error) {
 	}
 
 	// Find the last '/' that separates pattern from flags.
-	lastSlash := strings.LastIndex(s, "/")
+	lastSlash := findLastUnescapedSlash(s)
 	if lastSlash <= 0 {
 		return regexp.Compile(s)
 	}

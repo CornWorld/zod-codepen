@@ -244,9 +244,7 @@ export function createZodV3Adapter(): ZodAdapter {
  * Default filter: include API schemas (no $ prefix)
  */
 export const defaultFilter = (name: string): boolean => {
-  // Skip type-only exports
-  if (name.endsWith("Type")) return false;
-  // Include API schemas (no $ prefix)
+  // Skip internal schemas ($ prefix)
   return !name.startsWith("$");
 };
 
@@ -322,7 +320,8 @@ export async function generateSchemas(
     lines.push("");
   }
 
-  lines.push("import { z } from 'zod';");
+  const zodImport = zodVersion === "v3" ? "'zod'" : "'zod/v4'";
+  lines.push(`import { z } from ${zodImport};`);
   lines.push("");
 
   // Serialize schemas
@@ -355,7 +354,7 @@ export async function generateSchemas(
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  fs.writeFileSync(outputPath, lines.join("\n"));
+  fs.writeFileSync(outputPath, lines.join("\n") + "\n");
   log(`Generated: ${outputPath}`);
 }
 
@@ -391,10 +390,24 @@ export function zodDecouplingAlias(options: ZodDecouplingAliasOptions): Plugin {
     config(userConfig) {
       const root = userConfig.root || process.cwd();
       const aliasToResolved = path.resolve(root, aliasTo);
+      const existingAlias = userConfig.resolve?.alias;
+
+      // Merge with existing aliases instead of overwriting
+      if (Array.isArray(existingAlias)) {
+        return {
+          resolve: {
+            alias: [
+              ...existingAlias,
+              { find: aliasFrom, replacement: aliasToResolved },
+            ],
+          },
+        };
+      }
 
       return {
         resolve: {
           alias: {
+            ...(existingAlias || {}),
             [aliasFrom]: aliasToResolved,
           },
         },
@@ -462,16 +475,31 @@ export function zodDecoupling(options: {
         });
       } catch (error) {
         console.error(`[zod-decoupling] Failed to import schemas:`, error);
+        throw error;
       }
     },
 
     config(userConfig) {
       const resolvedRoot = userConfig.root || process.cwd();
       const aliasToResolved = path.resolve(resolvedRoot, outputPath);
+      const existingAlias = userConfig.resolve?.alias;
+
+      // Merge with existing aliases instead of overwriting
+      if (Array.isArray(existingAlias)) {
+        return {
+          resolve: {
+            alias: [
+              ...existingAlias,
+              { find: aliasFrom, replacement: aliasToResolved },
+            ],
+          },
+        };
+      }
 
       return {
         resolve: {
           alias: {
+            ...(existingAlias || {}),
             [aliasFrom]: aliasToResolved,
           },
         },
@@ -616,7 +644,16 @@ export async function generateSchemasFromSource(
       log(`Skipping (filtered): ${name} [${ir.kind}]`);
       continue;
     }
-    const code = codegen(ir, cgOpts).trim();
+    let code: string;
+    try {
+      code = codegen(ir, cgOpts).trim();
+    } catch {
+      log(`Failed to codegen: ${name} [${ir.kind}]`);
+      lines.push(`export const ${name} = z.any(); /* codegen failed */`);
+      lines.push("");
+      skipped++;
+      continue;
+    }
     if (ir.kind === "raw" || ir.kind === "fallback") {
       lines.push(
         `/* ${ir.kind}: ${("reason" in ir && ir.reason) || "unresolved"} */`,
@@ -644,7 +681,7 @@ export async function generateSchemasFromSource(
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
-  fs.writeFileSync(outputPath, lines.join("\n"));
+  fs.writeFileSync(outputPath, lines.join("\n") + "\n");
   log(`Generated: ${outputPath}`);
 }
 
@@ -718,10 +755,24 @@ export function zodDecouplingStatic(options: {
     config(userConfig) {
       const resolvedRoot = userConfig.root || process.cwd();
       const aliasToResolved = path.resolve(resolvedRoot, outputPath);
+      const existingAlias = userConfig.resolve?.alias;
+
+      // Merge with existing aliases instead of overwriting
+      if (Array.isArray(existingAlias)) {
+        return {
+          resolve: {
+            alias: [
+              ...existingAlias,
+              { find: aliasFrom, replacement: aliasToResolved },
+            ],
+          },
+        };
+      }
 
       return {
         resolve: {
           alias: {
+            ...(existingAlias || {}),
             [aliasFrom]: aliasToResolved,
           },
         },

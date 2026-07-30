@@ -1,4 +1,4 @@
-import type { ZodAdapter } from '@zod-codepen/core';
+import type { ZodAdapter } from "@zod-codepen/core";
 
 /**
  * Zod v4 adapter
@@ -16,7 +16,7 @@ import type { ZodAdapter } from '@zod-codepen/core';
  * All v4 variants share the same internal _zod structure.
  */
 export const zodV4Adapter: ZodAdapter = {
-  version: 'v4',
+  version: "v4",
 
   getType(schema: unknown): string | undefined {
     if (!this.isZodSchema(schema)) return undefined;
@@ -24,35 +24,26 @@ export const zodV4Adapter: ZodAdapter = {
     const s = schema as Record<string, unknown>;
 
     // v4 classic: direct .type property
-    if (typeof s.type === 'string') {
+    if (typeof s.type === "string") {
       return s.type;
     }
 
     // v4 all variants: _zod.def.type
-    if (s._zod && typeof s._zod === 'object') {
+    if (s._zod && typeof s._zod === "object") {
       const zod = s._zod as Record<string, unknown>;
-      if (zod.def && typeof zod.def === 'object') {
+      if (zod.def && typeof zod.def === "object") {
         const def = zod.def as Record<string, unknown>;
-        if (typeof def.type === 'string') {
+        if (typeof def.type === "string") {
           return def.type;
         }
       }
     }
 
     // v4 classic fallback: .def.type
-    if (s.def && typeof s.def === 'object') {
+    if (s.def && typeof s.def === "object") {
       const def = s.def as Record<string, unknown>;
-      if (typeof def.type === 'string') {
+      if (typeof def.type === "string") {
         return def.type;
-      }
-    }
-
-    // v3 compatibility fallback: _def.typeName (normalize "ZodString" -> "string")
-    if (s._def && typeof s._def === 'object') {
-      const def = s._def as Record<string, unknown>;
-      if (typeof def.typeName === 'string') {
-        const typeName = def.typeName as string;
-        return typeName.replace(/^Zod/, '').toLowerCase();
       }
     }
 
@@ -65,53 +56,43 @@ export const zodV4Adapter: ZodAdapter = {
     const s = schema as Record<string, unknown>;
 
     // v4 all variants: _zod.def
-    if (s._zod && typeof s._zod === 'object') {
+    if (s._zod && typeof s._zod === "object") {
       const zod = s._zod as Record<string, unknown>;
-      if (zod.def && typeof zod.def === 'object') {
+      if (zod.def && typeof zod.def === "object") {
         return zod.def as Record<string, unknown>;
       }
     }
 
     // v4 classic: .def
-    if (s.def && typeof s.def === 'object') {
+    if (s.def && typeof s.def === "object") {
       return s.def as Record<string, unknown>;
-    }
-
-    // v3 compatibility fallback: _def
-    if (s._def && typeof s._def === 'object') {
-      return s._def as Record<string, unknown>;
     }
 
     return undefined;
   },
 
   isZodSchema(value: unknown): boolean {
-    if (!value || typeof value !== 'object') return false;
+    if (!value || typeof value !== "object") return false;
 
     const candidate = value as Record<string, unknown>;
 
     // v4 all variants: has _zod with def.type
-    if (candidate._zod && typeof candidate._zod === 'object') {
+    if (candidate._zod && typeof candidate._zod === "object") {
       const zod = candidate._zod as Record<string, unknown>;
-      if (zod.def && typeof zod.def === 'object') {
+      if (zod.def && typeof zod.def === "object") {
         const def = zod.def as Record<string, unknown>;
-        if (typeof def.type === 'string') {
+        if (typeof def.type === "string") {
           return true;
         }
       }
     }
 
     // v4 classic: has direct .type
-    if (typeof candidate.type === 'string' && typeof candidate.parse === 'function') {
+    if (
+      typeof candidate.type === "string" &&
+      typeof candidate.parse === "function"
+    ) {
       return true;
-    }
-
-    // v3 compatibility: _def.typeName
-    if (candidate._def && typeof candidate._def === 'object') {
-      const def = candidate._def as Record<string, unknown>;
-      if (typeof def.typeName === 'string') {
-        return true;
-      }
     }
 
     return false;

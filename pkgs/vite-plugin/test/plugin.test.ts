@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { zodDecouplingAlias, zodDecoupling } from "../src/index.js";
 import type { UserConfig, ResolvedConfig } from "vite";
 
@@ -139,10 +139,6 @@ describe("zodDecoupling", () => {
   });
 
   it("handles buildStart with import error gracefully", async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
     const plugin = zodDecoupling({
       schemaEntry: "./non-existent-file.ts",
       outputPath: "./src/generated/schemas.ts",
@@ -156,15 +152,8 @@ describe("zodDecoupling", () => {
 
     (plugin.configResolved as ConfigResolvedFn)(mockConfig);
 
-    // buildStart should handle import errors gracefully
-    await (plugin.buildStart as BuildStartFn)();
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[zod-decoupling]"),
-      expect.anything(),
-    );
-
-    consoleErrorSpy.mockRestore();
+    // buildStart should re-throw the import error
+    await expect((plugin.buildStart as BuildStartFn)()).rejects.toThrow();
   });
 
   it("uses default options correctly", () => {

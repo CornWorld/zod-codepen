@@ -31,15 +31,18 @@ func validatePrimitive(vc *validationCtx, n *PrimitiveNode, path []string, input
 			vc.addError(path, "invalid_type",
 				"expected null", "null", fmt.Sprintf("%T", input))
 		}
-	case PrimUndef, PrimVoid:
-		// In JSON, undefined doesn't exist. nil is the closest.
-		// z.undefined() accepts only undefined, which in JSON is absent.
-		// z.void() accepts undefined/void.
-		// For practical purposes, nil is accepted.
-		// Non-nil is rejected.
+	case PrimUndef:
+		// In JSON context, undefined value is represented by null/missing.
+		// We cannot distinguish null from undefined in JSON, so we accept nil.
 		if input != nil {
 			vc.addError(path, "invalid_type",
 				"expected undefined", "undefined", fmt.Sprintf("%T", input))
+		}
+	case PrimVoid:
+		// z.void() accepts undefined or null.
+		if input != nil {
+			vc.addError(path, "invalid_type",
+				"expected undefined or null", "void", fmt.Sprintf("%T", input))
 		}
 	case PrimAny:
 		// z.any() accepts everything.
@@ -148,14 +151,29 @@ func validateDate(vc *validationCtx, n *PrimitiveNode, path []string, input any)
 func coerceValue(target PrimitiveName, input any) any {
 	switch target {
 	case PrimString:
-		return fmt.Sprint(input)
+		return coerceToString(input)
 	case PrimNumber:
 		f, ok := toFloat(input)
 		if ok {
 			return f
 		}
-		// If string, try to parse.
+		// If string, try to parse hex/binary/octal JS prefixes first.
 		if s, ok := input.(string); ok {
+			if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+				if v, err := strconv.ParseInt(s[2:], 16, 64); err == nil {
+					return float64(v)
+				}
+			}
+			if strings.HasPrefix(s, "0b") || strings.HasPrefix(s, "0B") {
+				if v, err := strconv.ParseInt(s[2:], 2, 64); err == nil {
+					return float64(v)
+				}
+			}
+			if strings.HasPrefix(s, "0o") || strings.HasPrefix(s, "0O") {
+				if v, err := strconv.ParseInt(s[2:], 8, 64); err == nil {
+					return float64(v)
+				}
+			}
 			if v, err := strconv.ParseFloat(s, 64); err == nil {
 				return v
 			}
@@ -188,6 +206,37 @@ func coerceValue(target PrimitiveName, input any) any {
 		return input
 	default:
 		return input
+	}
+}
+
+// coerceToString converts input to a string matching JavaScript's String() behavior.
+func coerceToString(input any) string {
+	switch v := input.(type) {
+	case nil:
+		return "null"
+	case string:
+		return v
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case float64:
+		// JS String() for numbers: integers have no decimal point
+		if v == float64(int64(v)) && !math.IsNaN(v) && !math.IsInf(v, 0) {
+			return fmt.Sprintf("%.0f", v)
+		}
+		return fmt.Sprint(v)
+	case []any:
+		parts := make([]string, len(v))
+		for i, e := range v {
+			parts[i] = coerceToString(e)
+		}
+		return strings.Join(parts, ",")
+	case map[string]any:
+		return "[object Object]"
+	default:
+		return fmt.Sprint(v)
 	}
 }
 
@@ -276,6 +325,18 @@ func parseDateString(s string) (time.Time, error) {
 	}
 	// Try with milliseconds.
 	if t, err := time.Parse("2006-01-02T15:04:05.000Z", s); err == nil {
+		return t, nil
+	}
+	// Try with milliseconds, no timezone
+	if t, err := time.Parse("2006-01-02T15:04:05.000", s); err == nil {
+		return t, nil
+	}
+	// Try space-separated ISO 8601
+	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+		return t, nil
+	}
+	// Try with milliseconds and timezone offset
+	if t, err := time.Parse("2006-01-02T15:04:05.000-07:00", s); err == nil {
 		return t, nil
 	}
 	return time.Time{}, fmt.Errorf("unrecognized date format")

@@ -167,6 +167,11 @@ export default defineConfig({
 - 命名空间导入展开（`import * as N` 后用 `N.X`）
 - 多层 wrapper 内联
 
+✅ 当前版本已支持：
+
+- `z.object({ x })` shorthand 属性引用解析（通过 resolver）
+- `z.object({...}).optional()` 等 modifier 链在 composite 类型上的完整支持
+
 ## 性能
 
 - TypeScript compiler 顶层 import ≈ 50ms 启动开销

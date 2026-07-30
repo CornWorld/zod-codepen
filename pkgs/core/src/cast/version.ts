@@ -24,8 +24,8 @@
 export interface NormalizedCheck {
   kind: string;
   value?: unknown;
-  minimum?: number;
-  maximum?: number;
+  minimum?: number | bigint;
+  maximum?: number | bigint;
   inclusive?: boolean;
   regex?: RegExp;
 }
@@ -117,8 +117,8 @@ export function normalizeChecks(
       result.push({
         kind: V3_KIND_FALLBACK[c.kind] ?? c.kind,
         value: c.value,
-        minimum: c.value as number | undefined,
-        maximum: c.value as number | undefined,
+        minimum: c.kind === "max" ? undefined : (c.value as number | undefined),
+        maximum: c.kind === "min" ? undefined : (c.value as number | undefined),
         inclusive: c.inclusive as boolean | undefined,
         regex: c.regex as RegExp | undefined,
       });

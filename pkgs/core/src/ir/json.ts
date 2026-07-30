@@ -449,6 +449,11 @@ export function schemasToJson(
 ): AstJsonDocument {
   const schemas: Record<string, unknown> = {};
   for (const entry of results) {
+    if (entry.name in schemas) {
+      console.warn(
+        `[ir-to-json] duplicate schema name '${entry.name}' — overwriting previous entry`,
+      );
+    }
     schemas[entry.name] = irToJsonRec(entry.ir);
   }
   return {

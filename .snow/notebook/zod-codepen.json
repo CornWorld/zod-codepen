@@ -1,0 +1,104 @@
+{
+  "pkgs/go/validate_composite.go": [
+    {
+      "id": "notebook-1785308069435_i2f8id15o",
+      "filePath": "pkgs/go/validate_composite.go",
+      "note": "C4 FIX: setElementKey now uses sorted map keys for deterministic serialization (was non-deterministic fmt.Sprintf(\"obj:%v\", v)). Added imports for \"sort\" and \"strings\".",
+      "createdAt": "2026-07-29T14:54:29.435",
+      "updatedAt": "2026-07-29T14:54:29.435"
+    }
+  ],
+  "pkgs/go/validate_primitive.go": [
+    {
+      "id": "notebook-1785308074839_zzce5f4p5",
+      "filePath": "pkgs/go/validate_primitive.go",
+      "note": "H5 FIX: coerceValue number now handles JS numeric prefixes: 0x (hex), 0b (binary), 0o (octal) before falling back to ParseFloat.",
+      "createdAt": "2026-07-29T14:54:34.839",
+      "updatedAt": "2026-07-29T14:54:34.839"
+    },
+    {
+      "id": "notebook-1785308074839_vicitpt0s",
+      "filePath": "pkgs/go/validate_primitive.go",
+      "note": "H4 FIX: Replaced fmt.Sprint in coerceValue string coercion with JS-compatible coerceToString helper. Handles nil→\"null\", bool→\"true\"/\"false\", arrays→comma-joined, maps→\"[object Object]\", int floats→no decimal.",
+      "createdAt": "2026-07-29T14:54:34.839",
+      "updatedAt": "2026-07-29T14:54:34.839"
+    },
+    {
+      "id": "notebook-1785308074839_kveq5bu4u",
+      "filePath": "pkgs/go/validate_primitive.go",
+      "note": "H3 FIX: Split PrimUndef/PrimVoid into separate cases with distinct error messages. z.undefined() expects only undefined, z.void() accepts undefined or null.",
+      "createdAt": "2026-07-29T14:54:34.839",
+      "updatedAt": "2026-07-29T14:54:34.839"
+    },
+    {
+      "id": "notebook-1785308074839_vqxesggvx",
+      "filePath": "pkgs/go/validate_primitive.go",
+      "note": "H1 FIX: Added 3 missing ISO 8601 date formats to parseDateString: ms without tz (2006-01-02T15:04:05.000), space-separated (2006-01-02 15:04:05), ms with tz offset (2006-01-02T15:04:05.000-07:00).",
+      "createdAt": "2026-07-29T14:54:34.839",
+      "updatedAt": "2026-07-29T14:54:34.839"
+    }
+  ],
+  "pkgs/core/src/extract/resolver.ts": [
+    {
+      "id": "notebook-1785308091659_yb2fsx3rs",
+      "filePath": "pkgs/core/src/extract/resolver.ts",
+      "note": "MED-3: resolveIdentifier delegates to lookupIdentifierIR to eliminate ~35 lines of duplicated logic (both methods did the same local + cross-file lookup with circular handling)",
+      "createdAt": "2026-07-29T14:54:51.659",
+      "updatedAt": "2026-07-29T14:54:51.659"
+    }
+  ],
+  "pkgs/core/src/ir/json.ts": [
+    {
+      "id": "notebook-1785308091738_0sfca0oyo",
+      "filePath": "pkgs/core/src/ir/json.ts",
+      "note": "MED-4: schemasToJson now warns via console.warn when duplicate schema names overwrite previous entries",
+      "createdAt": "2026-07-29T14:54:51.738",
+      "updatedAt": "2026-07-29T14:54:51.738"
+    }
+  ],
+  "pkgs/core/src/cast/ast.ts": [
+    {
+      "id": "notebook-1785308091816_spn2jpu8w",
+      "filePath": "pkgs/core/src/cast/ast.ts",
+      "note": "MED-5: castObjectChain now warns via console.warn for unknown object-chain step names (e.g., .optional() on objects) instead of silently ignoring them",
+      "createdAt": "2026-07-29T14:54:51.816",
+      "updatedAt": "2026-07-29T14:54:51.816"
+    }
+  ],
+  "pkgs/core/src/cast/ast-utils.ts": [
+    {
+      "id": "notebook-1785308091903_p9rtjapwv",
+      "filePath": "pkgs/core/src/cast/ast-utils.ts",
+      "note": "MED-6: parseObjectLiteral now warns via console.warn when a computed property key can't be statically resolved (field skipped)",
+      "createdAt": "2026-07-29T14:54:51.903",
+      "updatedAt": "2026-07-29T14:54:51.903"
+    }
+  ],
+  "pkgs/core/src/number-formatter.ts": [
+    {
+      "id": "notebook-1785308092011_rxxcjacd1",
+      "filePath": "pkgs/core/src/number-formatter.ts",
+      "note": "LOW-6: formatNumber now handles -0 (Object.is(value, -0) returns '-0') instead of String(-0) which returns '0'",
+      "createdAt": "2026-07-29T14:54:52.011",
+      "updatedAt": "2026-07-29T14:54:52.011"
+    }
+  ],
+  "pkgs/core/src/serializer.ts": [
+    {
+      "id": "notebook-1785308092104_pmg7q2vj8",
+      "filePath": "pkgs/core/src/serializer.ts",
+      "note": "LOW-4: generateModule returns empty string when no schemas were serialized (avoids orphan 'import { z } from zod;' with no exports)",
+      "createdAt": "2026-07-29T14:54:52.104",
+      "updatedAt": "2026-07-29T14:54:52.104"
+    }
+  ],
+  "pkgs/vite-plugin/src/index.ts": [
+    {
+      "id": "notebook-1785308092199_4ays05kdo",
+      "filePath": "pkgs/vite-plugin/src/index.ts",
+      "note": "M4: defaultFilter no longer skips Type-suffixed names (dropping names like UserType, ProductType was too aggressive)",
+      "createdAt": "2026-07-29T14:54:52.199",
+      "updatedAt": "2026-07-29T14:54:52.199"
+    }
+  ]
+}

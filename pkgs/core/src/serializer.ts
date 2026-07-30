@@ -119,7 +119,8 @@ export function createSerializer(adapter: ZodAdapter) {
     schemas: Record<string, unknown>,
     options: SerializeOptions = {},
   ): string {
-    const lines: string[] = ["import { z } from 'zod';"];
+    const moduleSource = adapter.version === "v4" ? "zod/v4" : "zod";
+    const lines: string[] = [`import { z } from '${moduleSource}';`];
     lines.push("");
 
     for (const [name, schema] of Object.entries(schemas)) {
@@ -129,6 +130,9 @@ export function createSerializer(adapter: ZodAdapter) {
         lines.push("");
       }
     }
+
+    // Return empty string if no schemas were serialized (avoids orphan import).
+    if (lines.length <= 2) return "";
 
     return lines.join("\n");
   }

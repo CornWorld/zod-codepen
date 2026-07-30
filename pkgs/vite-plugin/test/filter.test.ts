@@ -16,10 +16,10 @@ describe("defaultFilter", () => {
     expect(defaultFilter("$")).toBe(false);
   });
 
-  it("excludes names ending with Type", () => {
-    expect(defaultFilter("UserType")).toBe(false);
-    expect(defaultFilter("ResponseType")).toBe(false);
-    expect(defaultFilter("Type")).toBe(false);
+  it("includes names ending with Type", () => {
+    expect(defaultFilter("UserType")).toBe(true);
+    expect(defaultFilter("ResponseType")).toBe(true);
+    expect(defaultFilter("Type")).toBe(true);
   });
 
   it("includes names containing but not ending with Type", () => {

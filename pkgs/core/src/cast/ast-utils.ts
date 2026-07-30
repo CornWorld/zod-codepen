@@ -156,7 +156,9 @@ export function getLiteralValue(node: ts.Expression): LiteralValue {
     case ts.SyntaxKind.BigIntLiteral:
       return { value: parseBigIntLiteral(node as ts.BigIntLiteral) };
     case ts.SyntaxKind.RegularExpressionLiteral:
-      return { value: parseRegexLiteral((node as ts.Identifier).text) };
+      return {
+        value: parseRegexLiteral((node as ts.RegularExpressionLiteral).text),
+      };
     case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
       return { value: (node as ts.NoSubstitutionTemplateLiteral).text };
     case ts.SyntaxKind.PrefixUnaryExpression: {
@@ -299,8 +301,9 @@ export function parseObjectLiteral(
     if (ts.isPropertyAssignment(prop)) {
       const key = readPropertyName(prop.name);
       if (key === undefined) {
-        // Computed key we can't resolve — skip. Caller can detect by
-        // length mismatch.
+        console.warn(
+          "[cast-ast] skipping field with unresolvable computed property key",
+        );
         continue;
       }
       fields.push({ kind: "field", key, valueExpr: prop.initializer });

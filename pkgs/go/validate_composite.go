@@ -2,7 +2,10 @@ package zodval
 
 import (
 	"fmt"
+	"math"
 	"math/big"
+	"sort"
+	"strings"
 )
 
 func validateObject(vc *validationCtx, n *ObjectNode, path []string, input any) {
@@ -246,7 +249,24 @@ func setElementKey(elem any) string {
 	case nil:
 		return "null"
 	case map[string]any:
-		return fmt.Sprintf("obj:%v", v)
+		// Use deterministic key ordering for consistent map serialization
+		keys := make([]string, 0, len(v))
+		for k := range v {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		var b strings.Builder
+		b.WriteString("obj:{")
+		for i, k := range keys {
+			if i > 0 {
+				b.WriteString(",")
+			}
+			b.WriteString(k)
+			b.WriteString(":")
+			b.WriteString(fmt.Sprint(v[k]))
+		}
+		b.WriteString("}")
+		return b.String()
 	case []any:
 		return fmt.Sprintf("arr:%v", v)
 	default:
@@ -282,6 +302,21 @@ func validateUnion(vc *validationCtx, n *UnionNode, path []string, input any) {
 		"union", goTypeName(input))
 }
 
+// unwrapToObject recursively unwraps *ModifiedNode wrappers to find the inner *ObjectNode.
+// Returns nil if the node is not or does not wrap an *ObjectNode.
+func unwrapToObject(n IRNode) *ObjectNode {
+	for {
+		switch v := n.(type) {
+		case *ObjectNode:
+			return v
+		case *ModifiedNode:
+			n = v.Inner
+		default:
+			return nil
+		}
+	}
+}
+
 func validateDiscriminatedUnion(vc *validationCtx, n *UnionNode, path []string, input any) {
 	discKey := *n.Discriminator
 
@@ -304,8 +339,8 @@ func validateDiscriminatedUnion(vc *validationCtx, n *UnionNode, path []string, 
 
 	// Find the matching option by looking at the literal value in the discriminator field.
 	for _, opt := range n.Options {
-		optObj, ok := opt.(*ObjectNode)
-		if !ok {
+		optObj := unwrapToObject(opt)
+		if optObj == nil {
 			continue
 		}
 
@@ -397,6 +432,9 @@ func deepEqual(a, b any) bool {
 	// Number comparison (float64 with int).
 	if fa, ok := toFloat(a); ok {
 		if fb, ok := toFloat(b); ok {
+			if math.IsNaN(fa) && math.IsNaN(fb) {
+				return true
+			}
 			return fa == fb
 		}
 	}
