@@ -135,10 +135,13 @@ function castByType(
     case "pipeline":
       return castPipe(schema, adapter);
     case "transform":
-      // v4 standalone transform type — main branch emits a placeholder.
+      // v4 standalone ZodTransform — either z.transform(fn) itself or a
+      // pipe side seen without its wrapper. It is a public v4 API, so
+      // emit the valid z.transform(placeholder) form; a bare comment
+      // here would produce invalid syntax in expression position.
       return {
         kind: "raw",
-        code: "/* transform */",
+        code: "z.transform((x) => x /* transform placeholder */)",
         reason: "v4 standalone ZodTransform reached without pipe wrapper",
         original: schema,
       };
@@ -602,12 +605,31 @@ function castPipe(schema: unknown, adapter: ZodAdapter): IRNode {
     return { kind: "primitive", primitive: "any", constraints: [] };
   }
 
+  // v4 direction 1: pipe(ZodTransform, schema) — this is how
+  // z.preprocess(fn, out) compiles down in v4. Emit a preprocess IR
+  // wrapping the output schema. The callback lives on the transform's
+  // own def; placeholder mode intentionally discards it (see the
+  // FunctionNode.mode docs in ir/nodes.ts).
+  if (adapter.isZodSchema(input) && adapter.getType(input) === "transform") {
+    return {
+      kind: "preprocess",
+      inner: output
+        ? castFromZod(output, adapter)
+        : { kind: "primitive", primitive: "any", constraints: [] },
+      fn: {
+        kind: "function",
+        usage: "preprocess",
+        mode: "placeholder",
+      },
+    };
+  }
+
   const inputIR = castFromZod(input, adapter);
 
-  // If the output is a ZodTransform (v4 pattern: .transform() creates
-  // pipe(in, transform)), emit a transform IR wrapping the input.
-  // This matches the original pipe handler's behavior of detecting
-  // outType === 'transform' and emitting .transform().
+  // v4 direction 2: pipe(schema, ZodTransform) — .transform(fn).
+  // Emit a transform IR wrapping the input. This matches the original
+  // pipe handler's behavior of detecting outType === 'transform' and
+  // emitting .transform().
   if (output && adapter.isZodSchema(output)) {
     const outType = adapter.getType(output);
     if (outType === "transform") {
