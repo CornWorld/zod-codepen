@@ -1237,12 +1237,13 @@ function castStandaloneTransform(
   opts: AstCastOptions,
   fileName: string,
 ): IRNode {
-  // Standalone z.transform(fn) — v4 form. Rare; we wrap with placeholder.
+  // Standalone z.transform(fn) — v4 form. Public API; mirror the runtime
+  // cast and emit the valid z.transform(placeholder) expression.
   void opts;
   void fileName;
   return {
     kind: "raw",
-    code: "/* transform */",
+    code: "z.transform((x) => x /* transform placeholder */)",
     reason: "standalone-transform-without-pipe",
   };
 }
@@ -1254,9 +1255,11 @@ function castStandaloneRefine(
 ): IRNode {
   void opts;
   void fileName;
+  // Standalone refine has no inner schema; attach the placeholder to
+  // z.any() so the render stays a valid expression.
   return {
     kind: "raw",
-    code: "/* refine */",
+    code: "z.any().refine((x) => true /* refinement placeholder */)",
     reason: "standalone-refine-without-inner",
   };
 }

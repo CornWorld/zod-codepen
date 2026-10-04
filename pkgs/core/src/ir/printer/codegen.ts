@@ -498,7 +498,9 @@ export function codegen(node: IRNode, options: CodegenOptions): string {
 
     case "lazy":
       if (node.placeholder) {
-        return `z.lazy(() => /* circular reference */)`;
+        // The arrow body must be a real expression — `() => /* c */` is
+        // a SyntaxError (empty body after comment).
+        return `z.lazy(() => z.any() /* circular reference */)`;
       }
       if (node.inner) {
         return `z.lazy(() => ${codegen(node.inner, options)})`;
@@ -512,7 +514,9 @@ export function codegen(node: IRNode, options: CodegenOptions): string {
       const detail = node.detail ? ` ${node.detail}` : "";
       switch (node.reason) {
         case "not-a-zod-schema":
-          return `/* not a zod schema:${detail} */`;
+          // Must stay a valid expression: renders land in expression
+          // position (object fields, args, export initializers).
+          return `z.any() /* not a zod schema${detail} */`;
         case "unknown-type":
           return `z.any() /* unknown type${detail} */`;
         case "unhandled":

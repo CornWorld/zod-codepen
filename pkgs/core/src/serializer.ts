@@ -81,7 +81,9 @@ export function createSerializer(adapter: ZodAdapter) {
       indentLevel: number = opts.indentLevel,
     ): string {
       if (!adapter.isZodSchema(s)) {
-        return `/* not a zod schema: ${typeof s} */`;
+        // Valid expression, diagnostic attached — callers embed this in
+        // export initializers.
+        return `z.any() /* not a zod schema: ${typeof s} */`;
       }
 
       const type = adapter.getType(s);
