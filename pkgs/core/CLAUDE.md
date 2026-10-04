@@ -175,11 +175,13 @@ graph LR
 
 ### 测试策略
 
-- **本模块 4 个测试文件，129 个测试**：
+- **本模块 6 个测试文件，183 个测试**：
   - `ast-utils.test.ts` — AST 工具函数测试
   - `cast-ast.test.ts` — 静态 AST cast 测试（420 行，涵盖 primitives/constraints/collections/objects/tuples/unions/wrapper inlining/edge cases）
+  - `ir-json.test.ts` — IR 节点 JSON AST 序列化测试（含 codegen 渲染）
   - `extract.test.ts` — 模块导出提取测试
   - `resolver.test.ts` — 跨文件 ModuleResolver 测试
+  - `expression-safety.test.ts` — 表达式安全契约测试（所有 escape-hatch 渲染必须为合法表达式）
 - **覆盖维度**：
   - 所有 IR 节点类型的 codegen 渲染
   - castFromAst 覆盖所有基础 Zod 类型

@@ -79,14 +79,14 @@ graph TD
 
 ## 模块索引
 
-| 模块路径                                         | 职责                                                                              | 语言           | 入口文件                | NPM 包                           | 测试                                         |
-| ------------------------------------------------ | --------------------------------------------------------------------------------- | -------------- | ----------------------- | -------------------------------- | -------------------------------------------- |
-| [pkgs/core](./pkgs/core/CLAUDE.md)               | 版本无关的序列化核心引擎，IR 节点定义、codegen、双 cast 路径（运行时 + 静态 AST） | TypeScript     | `src/index.ts`          | `@zod-codepen/core@1.0.1`        | Vitest（4 个测试文件，129 个测试）           |
-| [pkgs/zod-v3](./pkgs/zod-v3/CLAUDE.md)           | Zod v3 适配器，封装 v3 内部结构访问（`_def.typeName`）                            | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v3@1.0.1`      | Vitest（10 个测试文件，155 个测试）          |
-| [pkgs/zod-v4](./pkgs/zod-v4/CLAUDE.md)           | Zod v4 适配器，支持所有 v4 变体（`_zod.def.type`）                                | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v4@1.0.1`      | Vitest（9 个测试文件，53 个测试 + 4 个跳过） |
-| [pkgs/vite-plugin](./pkgs/vite-plugin/CLAUDE.md) | Vite 构建插件，运行时 + 静态两种 Schema 解耦模式                                  | TypeScript     | `src/index.ts`          | `@zod-codepen/vite-plugin@1.0.1` | Vitest（6 个测试文件，67 个测试）            |
-| [pkgs/go](./pkgs/go/CLAUDE.md)                   | Go 原生 Zod schema 校验器，读取 TS 端导出的 JSON AST 执行校验                     | Go             | `go.mod`                | — (独立 Go module)               | `go test`（94 个测试）                       |
-| [docs](./docs/CLAUDE.md)                         | VitePress 文档站点，包含指南、API 参考、Playground                                | Markdown + Vue | `.vitepress/config.mts` | `@zod-codepen/docs@0.0.2`        | 无                                           |
+| 模块路径                                         | 职责                                                                              | 语言           | 入口文件                | NPM 包                           | 测试                                          |
+| ------------------------------------------------ | --------------------------------------------------------------------------------- | -------------- | ----------------------- | -------------------------------- | --------------------------------------------- |
+| [pkgs/core](./pkgs/core/CLAUDE.md)               | 版本无关的序列化核心引擎，IR 节点定义、codegen、双 cast 路径（运行时 + 静态 AST） | TypeScript     | `src/index.ts`          | `@zod-codepen/core@1.0.1`        | Vitest（6 个测试文件，183 个测试）            |
+| [pkgs/zod-v3](./pkgs/zod-v3/CLAUDE.md)           | Zod v3 适配器，封装 v3 内部结构访问（`_def.typeName`）                            | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v3@1.0.1`      | Vitest（11 个测试文件，161 个测试）           |
+| [pkgs/zod-v4](./pkgs/zod-v4/CLAUDE.md)           | Zod v4 适配器，支持所有 v4 变体（`_zod.def.type`）                                | TypeScript     | `src/index.ts`          | `@zod-codepen/zod-v4@1.0.1`      | Vitest（10 个测试文件，70 个测试 + 4 个跳过） |
+| [pkgs/vite-plugin](./pkgs/vite-plugin/CLAUDE.md) | Vite 构建插件，运行时 + 静态两种 Schema 解耦模式                                  | TypeScript     | `src/index.ts`          | `@zod-codepen/vite-plugin@1.0.1` | Vitest（6 个测试文件，67 个测试）             |
+| [pkgs/go](./pkgs/go/CLAUDE.md)                   | Go 原生 Zod schema 校验器，读取 TS 端导出的 JSON AST 执行校验                     | Go             | `go.mod`                | — (独立 Go module)               | `go test`（94 个测试）                        |
+| [docs](./docs/CLAUDE.md)                         | VitePress 文档站点，包含指南、API 参考、Playground                                | Markdown + Vue | `.vitepress/config.mts` | `@zod-codepen/docs@0.0.2`        | 无                                            |
 
 详细模块文档请点击表格中的模块路径或上方结构图中的节点。
 
@@ -145,20 +145,20 @@ pnpm docs:preview
 
 ### 测试组织
 
-- **核心引擎（core）**：4 个测试文件，129 个测试
-  - AST 工具、cast-ast、extract、resolver
-- **Zod v3 适配器**：10 个测试文件，155 个测试
+- **核心引擎（core）**：6 个测试文件，183 个测试
+  - AST 工具、cast-ast、IR JSON、expression-safety、extract、resolver
+- **Zod v3 适配器**：11 个测试文件，161 个测试
   - 基础类型、字符串/数字约束、集合、组合类型、修饰符、效果、高级类型、模块生成、数字格式化
-- **Zod v4 适配器**：9 个测试文件，53 个测试 + 4 个跳过
+- **Zod v4 适配器**：10 个测试文件，70 个测试 + 4 个跳过
   - 覆盖相同场景 + v4 特性 + 适配器兼容性测试
-- **Vite 插件**：6 个测试文件，64 个测试
+- **Vite 插件**：6 个测试文件，67 个测试
   - 适配器、静态提取、插件、生成 schemas、E2E
 
 ### 测试工具
 
 - **框架**：Vitest 2.1+
 - **运行器**：`pnpm test`（所有包）或 `pnpm --filter <包名> test`
-- **总测试数**：401 个测试，0 失败
+- **总测试数**：486 个测试（含 4 个跳过），0 失败
 - Schema 类型覆盖：40+ 类型全覆盖
 - 约束/修饰符：每个类型的主要约束均有测试
 - 边界情况：null/undefined、空对象/数组、循环引用（lazy）
