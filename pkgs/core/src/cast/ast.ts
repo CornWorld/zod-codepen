@@ -850,7 +850,7 @@ function castArrayChain(
   if (!args[1] || args[1].length === 0) {
     return {
       kind: "array",
-      element: { kind: "primitive", primitive: "any", constraints: [] },
+      element: { kind: "primitive", primitive: "unknown", constraints: [] },
       constraints: [],
     };
   }
@@ -874,7 +874,7 @@ function castSetChain(
   if (!args[1] || args[1].length === 0) {
     return {
       kind: "set",
-      element: { kind: "primitive", primitive: "any", constraints: [] },
+      element: { kind: "primitive", primitive: "unknown", constraints: [] },
       constraints: [],
     };
   }
@@ -1033,7 +1033,7 @@ function castRecord(
     return {
       kind: "record",
       key: { kind: "primitive", primitive: "string", constraints: [] },
-      value: { kind: "primitive", primitive: "any", constraints: [] },
+      value: { kind: "primitive", primitive: "unknown", constraints: [] },
     };
   }
   const callArgs = args[1];
@@ -1059,8 +1059,8 @@ function castMap(
   if (!args[1] || args[1].length < 2) {
     return {
       kind: "map",
-      key: { kind: "primitive", primitive: "any", constraints: [] },
-      value: { kind: "primitive", primitive: "any", constraints: [] },
+      key: { kind: "primitive", primitive: "unknown", constraints: [] },
+      value: { kind: "primitive", primitive: "unknown", constraints: [] },
     };
   }
   return {
@@ -1120,7 +1120,7 @@ function castIntersection(
   fileName: string,
 ): IRNode {
   if (!args[1] || args[1].length < 2) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
   return {
     kind: "intersection",
@@ -1181,7 +1181,7 @@ function castPromise(
   if (!args[1] || args[1].length === 0) {
     return {
       kind: "promise",
-      inner: { kind: "primitive", primitive: "any", constraints: [] },
+      inner: { kind: "primitive", primitive: "unknown", constraints: [] },
     };
   }
   return {
@@ -1222,7 +1222,7 @@ function castPreprocess(
 ): IRNode {
   // z.preprocess(fn, E)
   if (!args[1] || args[1].length < 2 || !args[1][1]) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
   const inner = castFromExpression(args[1][1], opts, fileName);
   return {
@@ -1272,7 +1272,7 @@ function castPipe(
 ): IRNode {
   // z.pipe(A, B)
   if (!args[1] || args[1].length < 2) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
   return {
     kind: "pipe",

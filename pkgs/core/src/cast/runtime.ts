@@ -254,9 +254,13 @@ function castArray(schema: unknown, adapter: ZodAdapter): IRNode {
     element = def.type;
   }
   if (!element) {
+    // Degenerate schema: z.array() without an element throws on parse
+    // in v3 and v4, so this branch only sees non-functional schemas.
+    // Emit z.unknown() (not z.any()) so the broken shape stays visible
+    // in inferred types.
     return {
       kind: "array",
-      element: { kind: "primitive", primitive: "any", constraints: [] },
+      element: { kind: "primitive", primitive: "unknown", constraints: [] },
       constraints: [],
     };
   }
@@ -330,7 +334,7 @@ function castRecord(schema: unknown, adapter: ZodAdapter): IRNode {
     return {
       kind: "record",
       key: { kind: "primitive", primitive: "string", constraints: [] },
-      value: { kind: "primitive", primitive: "any", constraints: [] },
+      value: { kind: "primitive", primitive: "unknown", constraints: [] },
     };
   }
 
@@ -352,10 +356,10 @@ function castMap(schema: unknown, adapter: ZodAdapter): IRNode {
     kind: "map",
     key: keyType
       ? castFromZod(keyType, adapter)
-      : { kind: "primitive", primitive: "any", constraints: [] },
+      : { kind: "primitive", primitive: "unknown", constraints: [] },
     value: valueType
       ? castFromZod(valueType, adapter)
-      : { kind: "primitive", primitive: "any", constraints: [] },
+      : { kind: "primitive", primitive: "unknown", constraints: [] },
   };
 }
 
@@ -366,7 +370,7 @@ function castSet(schema: unknown, adapter: ZodAdapter): IRNode {
   if (!valueType) {
     return {
       kind: "set",
-      element: { kind: "primitive", primitive: "any", constraints: [] },
+      element: { kind: "primitive", primitive: "unknown", constraints: [] },
       constraints: [],
     };
   }
@@ -416,7 +420,7 @@ function castIntersection(schema: unknown, adapter: ZodAdapter): IRNode {
   const left = def?.left;
   const right = def?.right;
   if (!left || !right) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
   return {
     kind: "intersection",
@@ -559,7 +563,7 @@ function castEffects(schema: unknown, adapter: ZodAdapter): IRNode {
     | undefined;
 
   if (!inner) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
 
   const innerIR = castFromZod(inner, adapter);
@@ -602,7 +606,7 @@ function castPipe(schema: unknown, adapter: ZodAdapter): IRNode {
   const output = def?.out;
 
   if (!input) {
-    return { kind: "primitive", primitive: "any", constraints: [] };
+    return { kind: "primitive", primitive: "unknown", constraints: [] };
   }
 
   // v4 direction 1: pipe(ZodTransform, schema) — this is how
@@ -615,7 +619,7 @@ function castPipe(schema: unknown, adapter: ZodAdapter): IRNode {
       kind: "preprocess",
       inner: output
         ? castFromZod(output, adapter)
-        : { kind: "primitive", primitive: "any", constraints: [] },
+        : { kind: "primitive", primitive: "unknown", constraints: [] },
       fn: {
         kind: "function",
         usage: "preprocess",
@@ -672,7 +676,7 @@ function castPromise(schema: unknown, adapter: ZodAdapter): IRNode {
   if (!inner) {
     return {
       kind: "promise",
-      inner: { kind: "primitive", primitive: "any", constraints: [] },
+      inner: { kind: "primitive", primitive: "unknown", constraints: [] },
     };
   }
   return { kind: "promise", inner: castFromZod(inner, adapter) };
