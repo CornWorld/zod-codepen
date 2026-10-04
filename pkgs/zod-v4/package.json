@@ -1,8 +1,15 @@
 {
   "name": "@zod-codepen/zod-v4",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Zod v4 adapter for zod-to-code",
-  "keywords": ["zod", "zod-v4", "schema", "serialization", "code-generation", "typescript"],
+  "keywords": [
+    "zod",
+    "zod-v4",
+    "schema",
+    "serialization",
+    "code-generation",
+    "typescript"
+  ],
   "license": "MPL-2.0",
   "type": "module",
   "main": "./dist/index.js",

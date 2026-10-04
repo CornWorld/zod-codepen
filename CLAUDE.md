@@ -1,7 +1,7 @@
 # Zod Codepen - 项目架构文档
 
-> **最后更新**：2026-07-29
-> **版本**：1.0.2
+> **最后更新**：2026-10-04
+> **版本**：1.1.0
 
 Zod Codepen — 将 Zod Schema 序列化为纯 TypeScript/Go 校验器。支持 Zod v3/v4 双版本、静态 AST 提取、Vite 构建时解耦、Go 原生校验。
 
