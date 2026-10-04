@@ -499,13 +499,15 @@ export function codegen(node: IRNode, options: CodegenOptions): string {
     case "lazy":
       if (node.placeholder) {
         // The arrow body must be a real expression — `() => /* c */` is
-        // a SyntaxError (empty body after comment).
-        return `z.lazy(() => z.any() /* circular reference */)`;
+        // a SyntaxError (empty body after comment). z.unknown() instead
+        // of z.any() so the information loss stays visible in the
+        // inferred types.
+        return `z.lazy(() => z.unknown() /* circular reference */)`;
       }
       if (node.inner) {
         return `z.lazy(() => ${codegen(node.inner, options)})`;
       }
-      return `z.lazy(() => z.any())`;
+      return `z.lazy(() => z.unknown())`;
 
     case "promise":
       return `z.promise(${codegen(node.inner, options)})`;
@@ -516,13 +518,14 @@ export function codegen(node: IRNode, options: CodegenOptions): string {
         case "not-a-zod-schema":
           // Must stay a valid expression: renders land in expression
           // position (object fields, args, export initializers).
-          return `z.any() /* not a zod schema${detail} */`;
+          // z.unknown() keeps the loss visible in inferred types.
+          return `z.unknown() /* not a zod schema${detail} */`;
         case "unknown-type":
-          return `z.any() /* unknown type${detail} */`;
+          return `z.unknown() /* unknown type${detail} */`;
         case "unhandled":
-          return `z.any() /* unhandled type:${detail} */`;
+          return `z.unknown() /* unhandled type:${detail} */`;
       }
-      return "z.any()";
+      return "z.unknown()";
     }
 
     case "raw":

@@ -279,7 +279,7 @@ function castFromExpression(
     }
     return {
       kind: "raw",
-      code: "z.any()",
+      code: "z.unknown()",
       reason: `identifier-ref:${expr.text}`,
     };
   }
@@ -801,7 +801,7 @@ function castLiteral(args: ts.Expression[][]): IRNode {
   if ("unresolved" in v) {
     return {
       kind: "raw",
-      code: "z.any()",
+      code: "z.unknown()",
       reason: "literal-unresolved",
     };
   }
@@ -983,7 +983,7 @@ function castObjectFields(
         key: f.key,
         value: resolved ?? {
           kind: "raw",
-          code: "z.any()",
+          code: "z.unknown()",
           reason: `shorthand-ref:${f.key}`,
         },
       });
@@ -1256,10 +1256,11 @@ function castStandaloneRefine(
   void opts;
   void fileName;
   // Standalone refine has no inner schema; attach the placeholder to
-  // z.any() so the render stays a valid expression.
+  // z.unknown() so the render stays a valid expression and the loss
+  // stays visible in inferred types.
   return {
     kind: "raw",
-    code: "z.any().refine((x) => true /* refinement placeholder */)",
+    code: "z.unknown().refine((x) => true /* refinement placeholder */)",
     reason: "standalone-refine-without-inner",
   };
 }
@@ -1344,7 +1345,7 @@ function rawNode(
   }
   return {
     kind: "raw",
-    code: "z.any()",
+    code: "z.unknown()",
     reason,
     original: expr,
   };

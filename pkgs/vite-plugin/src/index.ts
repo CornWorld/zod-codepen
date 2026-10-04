@@ -337,7 +337,7 @@ export async function generateSchemas(
       }
     } catch (error) {
       console.warn(`[zod-decoupling] Failed to serialize '${name}':`, error);
-      lines.push(`export const ${name} = z.any(); // Serialization failed`);
+      lines.push(`export const ${name} = z.unknown(); // Serialization failed`);
       lines.push("");
     }
   }
@@ -649,7 +649,7 @@ export async function generateSchemasFromSource(
       code = codegen(ir, cgOpts).trim();
     } catch {
       log(`Failed to codegen: ${name} [${ir.kind}]`);
-      lines.push(`export const ${name} = z.any(); /* codegen failed */`);
+      lines.push(`export const ${name} = z.unknown(); /* codegen failed */`);
       lines.push("");
       skipped++;
       continue;

@@ -221,7 +221,7 @@ describe("generateSchemas", () => {
     const content = mockWriteFileSync.mock.calls[0][1];
     expect(content).toContain("export const Working");
     // Broken schema should have fallback
-    expect(content).toContain("export const Broken = z.any()");
+    expect(content).toContain("export const Broken = z.unknown()");
 
     consoleWarnSpy.mockRestore();
   });

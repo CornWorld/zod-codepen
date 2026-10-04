@@ -270,7 +270,8 @@ export interface PromiseNode {
 }
 
 /**
- * Sentinel for schemas that failed to cast. Renders as a comment + z.any().
+ * Sentinel for schemas that failed to cast. Renders as z.unknown() plus a
+ * diagnostic comment.
  * Carries the original type name so codegen can emit a helpful comment.
  */
 export interface FallbackNode {

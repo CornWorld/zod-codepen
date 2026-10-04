@@ -82,13 +82,14 @@ export function createSerializer(adapter: ZodAdapter) {
     ): string {
       if (!adapter.isZodSchema(s)) {
         // Valid expression, diagnostic attached — callers embed this in
-        // export initializers.
-        return `z.any() /* not a zod schema: ${typeof s} */`;
+        // export initializers. z.unknown() keeps the loss visible in
+        // inferred types.
+        return `z.unknown() /* not a zod schema: ${typeof s} */`;
       }
 
       const type = adapter.getType(s);
       if (!type) {
-        return "z.any() /* unknown type */";
+        return "z.unknown() /* unknown type */";
       }
 
       // 1. Custom handler (user-registered). Takes precedence to keep

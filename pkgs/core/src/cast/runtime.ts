@@ -63,8 +63,8 @@ export function castFromZod(schema: unknown, adapter: ZodAdapter): IRNode {
  * with serializer.ts.
  *
  * If a type is recognized but not yet implemented, it falls through to
- * the RawNode branch at the bottom. That's the IR escape hatch — we
- * never silently produce wrong code, we produce a comment + z.any()
+ * the FallbackNode branch at the bottom. That's the IR escape hatch — we
+ * never silently produce wrong code, we produce z.unknown() + a comment
  * that's easy to grep for.
  */
 function castByType(
@@ -448,11 +448,11 @@ function castModifier(
     def?.type && typeof def.type === "object" ? def.type : undefined;
   const inner = innerFromInnerType ?? innerFromType;
   if (!inner) {
-    // Inner missing — wrap an explicit z.any() to match original
-    // fallback behavior (e.g. "z.any().optional()").
+    // Inner missing — wrap an explicit z.unknown() so the information
+    // loss stays visible in inferred types (e.g. "z.unknown().optional()").
     return {
       kind: "modified",
-      inner: { kind: "primitive", primitive: "any", constraints: [] },
+      inner: { kind: "primitive", primitive: "unknown", constraints: [] },
       modifiers: [makeModifier(type, schema, def)],
     };
   }

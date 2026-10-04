@@ -483,7 +483,7 @@ interface ZodAdapter {
 如果单个 schema 序列化失败，函数会：
 
 1. 输出警告到控制台
-2. 生成 `z.any()` 作为占位符
+2. 生成 `z.unknown()` 作为占位符
 3. 继续处理其他 schema
 
 ```typescript
@@ -491,7 +491,7 @@ interface ZodAdapter {
 console.warn(`[zod-decoupling] Failed to serialize 'BrokenSchema':`, error);
 
 // 生成的代码
-export const BrokenSchema = z.any(); // Serialization failed
+export const BrokenSchema = z.unknown(); // Serialization failed
 ```
 
 ### zodDecoupling 错误

@@ -13,8 +13,10 @@ import {
  * position (object field values, function args, export initializers).
  * A bare `/* comment *\/` is NOT a valid expression — it produces
  * syntactically invalid output. Every fallback/escape-hatch render must
- * emit a valid expression (typically `z.any()`) with the diagnostic
- * comment attached after it.
+ * emit a valid expression — `z.unknown()` — with the diagnostic comment
+ * attached after it. z.unknown() (not z.any()) so the information loss
+ * stays visible in the inferred types instead of silently widening to
+ * `any`.
  */
 
 const defaultOpts: CodegenOptions = {
@@ -33,21 +35,21 @@ function assertEvaluable(code: string): void {
 }
 
 describe("codegen expression safety", () => {
-  it("fallback not-a-zod-schema renders an annotated z.any()", () => {
+  it("fallback not-a-zod-schema renders an annotated z.unknown()", () => {
     const node: IRNode = {
       kind: "fallback",
       reason: "not-a-zod-schema",
       detail: "object",
     };
     const code = codegen(node, defaultOpts);
-    expect(code).toBe("z.any() /* not a zod schema object */");
+    expect(code).toBe("z.unknown() /* not a zod schema object */");
     assertEvaluable(code);
   });
 
   it("lazy circular-reference placeholder keeps the arrow body a valid expression", () => {
     const node: IRNode = { kind: "lazy", placeholder: true };
     const code = codegen(node, defaultOpts);
-    expect(code).toBe("z.lazy(() => z.any() /* circular reference */)");
+    expect(code).toBe("z.lazy(() => z.unknown() /* circular reference */)");
     // `z.lazy(() => /* comment */)` is a SyntaxError: empty arrow body.
     assertEvaluable(code);
   });
@@ -76,7 +78,7 @@ describe("static AST path expression safety", () => {
     const ir = castFromAst(`export const S = z.refine((v) => true);`, "S");
     const code = codegen(ir, defaultOpts);
     expect(code).toBe(
-      "z.any().refine((x) => true /* refinement placeholder */)",
+      "z.unknown().refine((x) => true /* refinement placeholder */)",
     );
     assertEvaluable(code);
   });
@@ -90,10 +92,10 @@ describe("serializer top-level expression safety", () => {
     getDef: () => undefined,
   };
 
-  it("non-schema input renders an annotated z.any()", () => {
+  it("non-schema input renders an annotated z.unknown()", () => {
     const serializer = createSerializer(neverAdapter);
     const code = serializer.serialize({ nope: true });
-    expect(code).toBe("z.any() /* not a zod schema: object */");
+    expect(code).toBe("z.unknown() /* not a zod schema: object */");
     assertEvaluable(code);
   });
 });
