@@ -7,6 +7,7 @@
 ## 模块职责
 
 `@zod-codepen/docs` 是基于 VitePress 的文档站点，提供：
+
 - 完整的使用指南（入门、核心概念、进阶）
 - API 参考文档（函数签名、类型定义）
 - 在线 Playground（交互式 Schema 序列化演示）
@@ -14,6 +15,7 @@
 - 中英文双语支持（当前主要为中文）
 
 **部署方式**：
+
 - **平台**：Cloudflare Pages
 - **CI/CD**：GitHub Actions（自动部署 main 分支）
 - **域名**：https://zod-codepen.corn.im
@@ -23,6 +25,7 @@
 ## 入口与启动
 
 ### 主配置
+
 - **文件**：`.vitepress/config.mts`（150 行）
 - **配置内容**：
   - 站点元信息（标题、描述、favicon）
@@ -31,6 +34,7 @@
   - Markdown 渲染选项（代码高亮主题）
 
 ### 本地开发
+
 ```bash
 # 启动开发服务器（http://localhost:5173）
 pnpm --filter @zod-codepen/docs dev
@@ -41,6 +45,7 @@ pnpm dev
 ```
 
 ### 构建与部署
+
 ```bash
 # 构建静态站点
 pnpm docs:build
@@ -52,6 +57,12 @@ pnpm docs:preview
 pnpm --filter @zod-codepen/docs deploy
 ```
 
+> CI 部署：`.github/workflows/deploy-docs.yml` 使用 `cloudflare/wrangler-action@v3`，
+> 该 action 会在**仓库根目录**执行 `pnpm exec wrangler --version` 探测已有安装；
+> 因此 `wrangler` 除 `docs/package.json` 外还固定为**根 `package.json` 的 devDependency**
+> （勿删，否则 action 会尝试 `pnpm add wrangler@3.90.0` 并因 `ERR_PNPM_ADDING_TO_ROOT` 失败）。
+> Actions 侧还需仓库 secret：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。
+
 ---
 
 ## 对外接口
@@ -59,28 +70,33 @@ pnpm --filter @zod-codepen/docs deploy
 ### 文档结构
 
 #### 入门指南 (`/guide/`)
+
 - **introduction.md** - 项目简介
 - **getting-started.md** - 快速开始
 - **installation.md** - 安装说明
 
 #### 核心概念
+
 - **basic-usage.md** - 基本用法
 - **optimizations.md** - 代码优化
 - **formatting.md** - 格式化选项
 - **module-generation.md** - 模块生成
 
 #### Zod 版本
+
 - **zod-v3.md** - v3 适配器使用
 - **zod-v4.md** - v4 适配器使用
 - **v3-v4-differences.md** - v3/v4 差异对比
 
 #### 进阶
+
 - **vite-plugin.md** - Vite 插件使用
 - **custom-handlers.md** - 自定义处理器
 - **supported-types.md** - 支持的类型列表
 - **playground.md** - 在线 Playground
 
 #### API 参考 (`/api/`)
+
 - **serialize.md** - serialize() 函数
 - **generate-module.md** - generateModule() 函数
 - **register-handler.md** - registerHandler() 函数
@@ -88,6 +104,7 @@ pnpm --filter @zod-codepen/docs deploy
 - **vite-plugin.md** - Vite 插件 API
 
 #### 类型定义 (`/api/types/`)
+
 - **serialize-options.md** - SerializeOptions 类型
 - **zod-adapter.md** - ZodAdapter 接口
 - **schema-handler.md** - SchemaHandler 类型
@@ -95,6 +112,7 @@ pnpm --filter @zod-codepen/docs deploy
 ### 组件
 
 #### Playground.vue
+
 - **位置**：`.vitepress/components/Playground.vue`
 - **功能**：交互式 Schema 序列化演示
 - **依赖**：`@zod-codepen/zod-v3`、`@zod-codepen/zod-v4`
@@ -109,6 +127,7 @@ pnpm --filter @zod-codepen/docs deploy
 ## 关键依赖与配置
 
 ### 依赖项
+
 - **Dependencies**：`shiki@^1.0.0`（代码高亮）
 - **Dev Dependencies**：
   - `vitepress@^1.5.0`（文档框架）
@@ -117,42 +136,44 @@ pnpm --filter @zod-codepen/docs deploy
   - `@zod-codepen/zod-v4@workspace:*`（Playground 使用）
 
 ### VitePress 配置
+
 ```typescript
 // .vitepress/config.mts
 export default defineConfig({
   title: "zod-codepen",
   description: "Serialize Zod schemas to pure Zod code strings at runtime",
-  base: '/',
+  base: "/",
   cleanUrls: true,
 
   markdown: {
     lineNumbers: false,
     theme: {
-      light: 'github-light',
-      dark: 'github-dark'
-    }
+      light: "github-light",
+      dark: "github-dark",
+    },
   },
 
   themeConfig: {
-    logo: '/logo.svg',
+    logo: "/logo.svg",
     search: {
-      provider: 'local',  // 本地搜索
+      provider: "local", // 本地搜索
       options: {
         translations: {
-          button: { buttonText: '搜索文档' },
+          button: { buttonText: "搜索文档" },
           // ...
-        }
-      }
+        },
+      },
     },
     editLink: {
-      pattern: 'https://github.com/CornWorld/zod-codepen/edit/main/docs/:path',
-      text: '在 GitHub 上编辑此页'
-    }
-  }
-})
+      pattern: "https://github.com/CornWorld/zod-codepen/edit/main/docs/:path",
+      text: "在 GitHub 上编辑此页",
+    },
+  },
+});
 ```
 
 ### Cloudflare Pages 配置
+
 - **项目名称**：`zod-codepen`
 - **构建输出**：`.vitepress/dist`
 - **部署分支**：`main`（自动部署）、`preview`（预览部署）
@@ -179,6 +200,7 @@ graph TD
 ```
 
 ### 文档文件结构
+
 ```
 docs/
 ├── index.md                # 首页
@@ -220,6 +242,7 @@ docs/
 ## 测试与质量
 
 ### 测试策略
+
 - **本模块无自动化测试**：文档站点通过人工审查
 - **验证方式**：
   - 本地构建预览（`pnpm docs:build && pnpm docs:preview`）
@@ -227,11 +250,13 @@ docs/
   - 在线站点可访问性测试
 
 ### 质量保证
+
 - Markdown 链接检查（VitePress 内置）
 - 代码示例语法高亮验证
 - Playground 组件功能测试
 
 ### 待改进
+
 - [ ] 添加文档链接自动化检查
 - [ ] 添加代码示例自动化测试（确保示例代码可运行）
 - [ ] 添加 lighthouse 性能测试
@@ -241,36 +266,43 @@ docs/
 ## 常见问题 (FAQ)
 
 ### Q1: 如何添加新文档页面？
+
 A:
+
 1. 在对应目录创建 `.md` 文件
 2. 在 `.vitepress/config.mts` 的 `sidebar` 中添加链接
 3. 提交到 GitHub，CI 会自动部署
 
 ### Q2: Playground 如何工作？
+
 A: Playground 组件（`Playground.vue`）：
+
 - 使用 Monaco Editor 或 textarea 作为代码编辑器
 - 动态导入 `@zod-codepen/zod-v3` 或 `@zod-codepen/zod-v4`
 - 实时调用 `serialize()` 并展示结果
 - 使用 Shiki 高亮输出代码
 
 ### Q3: 如何本地测试 Cloudflare Pages 部署？
+
 A:
+
 ```bash
-# 安装 wrangler
-pnpm add -D wrangler
+# wrangler 已在根 package.json 和 docs/package.json 中声明，无需安装
 
 # 本地构建
 pnpm docs:build
 
 # 使用 wrangler 预览
 cd docs
-pnpx wrangler pages dev .vitepress/dist
+pnpm exec wrangler pages dev .vitepress/dist
 ```
 
 ### Q4: 文档搜索功能如何实现？
+
 A: 使用 VitePress 内置的本地搜索（`search.provider: 'local'`），无需外部服务。
 
 ### Q5: 如何更新文档主题？
+
 A: 编辑 `.vitepress/config.mts` 中的 `themeConfig`，VitePress 支持丰富的自定义选项。
 
 ---
@@ -278,24 +310,29 @@ A: 编辑 `.vitepress/config.mts` 中的 `themeConfig`，VitePress 支持丰富�
 ## 相关文件清单
 
 ### 配置文件
+
 - `.vitepress/config.mts`（150 行）：VitePress 配置
 - `package.json`：包元数据与部署脚本
 - `wrangler.toml`（如果存在）：Cloudflare Pages 配置
 
 ### 文档文件
+
 - `index.md`：首页
 - `guide/*.md`：指南（13 个文件）
 - `api/*.md`：API 参考（5 个函数 + 3 个类型）
 - `playground.md`：Playground 页面
 
 ### 组件
+
 - `.vitepress/components/Playground.vue`：交互式 Playground
 
 ### 构建产物（gitignore）
+
 - `.vitepress/dist/`：静态站点
 - `.vitepress/cache/`：VitePress 缓存
 
 ### Node 缓存（gitignore）
+
 - `node_modules/.cache/wrangler/`：Wrangler 缓存
 - `node_modules/.mf/`：Miniflare 缓存
 
@@ -304,6 +341,7 @@ A: 编辑 `.vitepress/config.mts` 中的 `themeConfig`，VitePress 支持丰富�
 ## 变更记录 (Changelog)
 
 ### 2025-12-11
+
 - 初始化文档模块说明
 - 完成站点结构扫描
 - 新增 Playground 组件说明
