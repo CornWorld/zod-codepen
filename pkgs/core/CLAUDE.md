@@ -221,7 +221,7 @@ serializer.registerHandler("customType", (schema, ctx) => {
 A: 支持以下转换（详见 `number-formatter.ts`）：
 
 - `Number.MAX_SAFE_INTEGER` / `Number.MIN_SAFE_INTEGER`
-- 2 的幂次：`2**31 - 1`（INT32_MAX）、`-2**31`（INT32_MIN）等
+- 2 的幂次：`2**31 - 1`（INT32_MAX）、`-(2**31)`（INT32_MIN）等
 - BigInt：`2n**63n - 1n`（INT64_MAX）等
 
 ### Q4: 如何禁用代码优化？
