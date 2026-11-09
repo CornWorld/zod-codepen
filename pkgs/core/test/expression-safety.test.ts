@@ -63,6 +63,52 @@ describe("codegen expression safety", () => {
   });
 });
 
+describe("numeric constraint expression safety", () => {
+  it("parenthesizes negative exponent boundaries for numbers", () => {
+    const node: IRNode = {
+      kind: "primitive",
+      primitive: "number",
+      constraints: [
+        {
+          kind: "constraint",
+          target: "number",
+          name: "min",
+          params: { value: -2147483648, inclusive: true },
+        },
+        {
+          kind: "constraint",
+          target: "number",
+          name: "max",
+          params: { value: 2147483647, inclusive: true },
+        },
+      ],
+    };
+    assertEvaluable(codegen(node, defaultOpts));
+  });
+
+  it("parenthesizes negative exponent boundaries for bigints", () => {
+    const node: IRNode = {
+      kind: "primitive",
+      primitive: "bigint",
+      constraints: [
+        {
+          kind: "constraint",
+          target: "bigint",
+          name: "min",
+          params: { value: -9223372036854775808n, inclusive: true },
+        },
+        {
+          kind: "constraint",
+          target: "bigint",
+          name: "max",
+          params: { value: 9223372036854775807n, inclusive: true },
+        },
+      ],
+    };
+    assertEvaluable(codegen(node, defaultOpts));
+  });
+});
+
 describe("static AST path expression safety", () => {
   it("standalone z.transform() emits a valid expression", () => {
     const ir = castFromAst(

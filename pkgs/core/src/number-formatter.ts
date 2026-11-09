@@ -4,6 +4,18 @@
  */
 
 /**
+ * Render the negative form of a numeric magnitude expression.
+ *
+ * Exponentiation binds tighter than unary minus, and the grammar forbids a
+ * unary operator directly on the left-hand side of `**`: `-2**31` is a
+ * SyntaxError (TS 17006). Any magnitude containing `**` must therefore be
+ * parenthesized before it is negated.
+ */
+function negateMagnitude(magnitude: string): string {
+  return magnitude.includes("**") ? `-(${magnitude})` : `-${magnitude}`;
+}
+
+/**
  * 将数值转换为更可读的格式
  * 优先使用 JavaScript 内置常量或科学记数法（2的幂次）
  */
@@ -38,7 +50,7 @@ export function formatBigInt(value: bigint): string {
     return "2n**63n - 1n"; // INT64 MAX
   }
   if (value === -9223372036854775808n) {
-    return "-2n**63n"; // INT64 MIN
+    return negateMagnitude("2n**63n"); // INT64 MIN
   }
   if (value === 18446744073709551615n) {
     return "2n**64n - 1n"; // UINT64 MAX
@@ -65,11 +77,11 @@ function getPowerOfTwoFormat(value: number): string | null {
     // JavaScript 中 2^53-1 已经用 MAX_SAFE_INTEGER 表示
   };
 
-  // 负数：-2^n (有符号整数最小值)
+  // 负数：-2^n (有符号整数最小值)，这里存 2^n 幅值，取负时统一加括号
   const negativePowers: Record<string, string> = {
-    "-128": "-2**7", // INT8 MIN
-    "-32768": "-2**15", // INT16 MIN
-    "-2147483648": "-2**31", // INT32 MIN
+    "-128": "2**7", // INT8 MIN
+    "-32768": "2**15", // INT16 MIN
+    "-2147483648": "2**31", // INT32 MIN
   };
 
   // 2的幂次（常用于无符号整数边界）
@@ -86,13 +98,13 @@ function getPowerOfTwoFormat(value: number): string | null {
     4294967295: "2**32 - 1", // UINT32 MAX
   };
 
-  return (
-    powersMinusOne[value] ||
-    negativePowers[String(value)] ||
-    powers[value] ||
-    unsignedMax[value] ||
-    null
-  );
+  const positive = powersMinusOne[value] || powers[value] || unsignedMax[value];
+  if (positive) return positive;
+
+  const negativeMagnitude = negativePowers[String(value)];
+  if (negativeMagnitude) return negateMagnitude(negativeMagnitude);
+
+  return null;
 }
 
 /**
@@ -114,7 +126,7 @@ function getBigIntPowerFormat(value: bigint): string | null {
 
     // 只处理合理范围的幂次（8, 16, 32, 64）
     if ([8n, 16n, 32n, 64n].includes(power)) {
-      return value < 0n ? `-2n**${power}n` : `2n**${power}n`;
+      return value < 0n ? negateMagnitude(`2n**${power}n`) : `2n**${power}n`;
     }
   }
 
@@ -129,7 +141,9 @@ function getBigIntPowerFormat(value: bigint): string | null {
     }
 
     if ([8n, 16n, 32n, 64n].includes(power)) {
-      return value < 0n ? `-(2n**${power}n - 1n)` : `2n**${power}n - 1n`;
+      return value < 0n
+        ? negateMagnitude(`2n**${power}n - 1n`)
+        : `2n**${power}n - 1n`;
     }
   }
 

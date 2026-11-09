@@ -29,6 +29,13 @@ describe('zod-v4 number constraints', () => {
     expect(serialize(z.number().max(100))).toContain('.max(100)');
   });
 
+  it('serializes INT32 range as parseable expressions', () => {
+    const code = serialize(
+      z.number().int().min(-2147483648).max(2147483647),
+    );
+    expect(() => new Function('z', `return (${code});`)).not.toThrow();
+  });
+
   it('serializes number validators', () => {
     expect(serialize(z.number().int())).toContain('.int()');
     expect(serialize(z.number().positive())).toContain('.positive()');
