@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { serialize } from "../src/index.js";
+import { serialize } from './serialize-checked.js';
 
 describe("zod-v4 effects", () => {
   // Note: In v4, refine() doesn't create an 'effects' type - the schema keeps its original type

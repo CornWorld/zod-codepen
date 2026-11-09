@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { serialize, generateModule } from "../src/index.js";
+import { serialize, generateModule } from './serialize-checked.js';
 
 describe("zod-v4 generateModule", () => {
   it("generates a complete module", () => {

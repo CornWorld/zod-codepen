@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { zodV4Adapter } from '../src/index.js';
+import { zodV4Adapter } from './serialize-checked.js';
 
 describe('zod-v4 adapter detection', () => {
   it('correctly identifies v4 adapter version', () => {

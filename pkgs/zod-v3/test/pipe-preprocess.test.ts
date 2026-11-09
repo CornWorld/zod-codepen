@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { serialize } from "../src/index.js";
+import { serialize } from './serialize-checked.js';
 
 /**
  * Regression locks for v3 effects and pipe output.
